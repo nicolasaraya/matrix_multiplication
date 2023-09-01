@@ -1,4 +1,5 @@
 OBJS	=   	main.o \
+				boost_multiplication.o \
 				matrix_multiplication.o \
 				Graph.o \
 				GraphWeighted.o \
@@ -6,6 +7,7 @@ OBJS	=   	main.o \
 				Utils.o
 
 SOURCE	=       main.cpp \
+				boost_multiplication.cpp \
 				../biclique_extraction/Graph/Graph.cpp \
 				../biclique_extraction/Graph/GraphWeighted.cpp \
 				../biclique_extraction/Graph/Node.cpp \
@@ -17,14 +19,15 @@ HEADER	=       ../biclique_extraction/Graph/Graph.hpp \
 				../biclique_extraction/Graph/GraphADT.hpp \
 				../biclique_extraction/Graph/Node.hpp \
 				../biclique_extraction/Utils/Utils.hpp \
+				boost_multiplication.hpp \
 				matrix_multiplication.cpp
 
 OUT	=           matrix_multiplicator
 CC	 =          g++
-FLAGS =         -c  -std=c++20 -DBITS32
+FLAGS =         -c  -std=c++20 -DBITS32 -fopenmp
 DEBUG_FLAGS =	-O0 -g
 OPT = 			-O3
-LFLAGS	=       -lm -lpthread
+LFLAGS	=       -lm -lpthread -fopenmp
 				
 # Define una variable que se utilizará para pasar las banderas
 # de compilación al objetivo "all" y sus dependencias
@@ -57,6 +60,9 @@ Node.o: ../biclique_extraction/Graph/Node.cpp
 
 Utils.o: ../biclique_extraction/Utils/Utils.cpp
 	$(CC) $(FLAGS) ../biclique_extraction/Utils/Utils.cpp 
+
+boost_multiplication.o: boost_multiplication.cpp
+	$(CC) $(FLAGS) boost_multiplication.cpp 
 
 clean:
 	rm -f $(OBJS) $(OBJS_CHECKER) $(OUT) $(OUT_CHECKER)
