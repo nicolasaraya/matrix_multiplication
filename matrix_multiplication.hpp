@@ -10,10 +10,11 @@
 #include <algorithm>
 #include <string.h>
 #include <omp.h>
+#include <mutex>
 
-
-namespace Lisa {
-    struct Biclique{
+namespace Lisa 
+{
+    struct Biclique {
         std::vector<uInt> S;
         std::vector<uInt> C;
         std::vector<std::pair<uInt,uInt>> C_w; 
@@ -21,13 +22,19 @@ namespace Lisa {
 
     GraphWeighted* matrix_multiplication_w(GraphWeighted*, GraphWeighted*);
     GraphWeighted* matrix_multiplication_w(GraphWeighted*, GraphWeighted*, std::vector<Biclique*>*);
+    GraphWeighted* matrix_multiplication_w_transposed(GraphWeighted*, GraphWeighted*);
+    GraphWeighted* matrix_multiplication_w_transposed(GraphWeighted*, GraphWeighted*, std::vector<Biclique*>*);
+    GraphWeighted* matrix_multiplication_w(GraphWeighted*, GraphWeighted*, std::vector<Biclique*>*, bool);
+    GraphWeighted* matrix_multiplication_w(GraphWeighted*, GraphWeighted*, bool);
     std::vector<std::pair<uInt,uInt>>* vector_matrix_multiplication_w(std::vector<std::pair<uInt, uInt>>, GraphWeighted*); 
 
     Graph* matrix_multiplication(Graph*, Graph*);
     Graph* matrix_multiplication(Graph*, Graph*, Biclique*);
     std::vector<uInt>* vector_matrix_multiplication(std::vector<uInt>, Graph*);
 
-    vector<Biclique*>* load_biclique_w(std::string);
+    std::vector<Biclique*>* load_biclique_w(std::string);
     void printBicliqueAsMatrix(Biclique*);
+
 }
+
 #endif

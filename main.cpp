@@ -3,7 +3,7 @@
 
 int main(int argc, char const *argv[])
 {
-
+    /*
     boost::ublas::matrix<uInt> matrixA;
     boost::ublas::matrix<uInt> matrixB;
     boost::ublas::matrix<uInt> biclique_b;
@@ -31,9 +31,10 @@ int main(int argc, char const *argv[])
     //printMatrix(C);
     TIMERSTOP(BOOST_MULTIPLICATION);
 
+    */
 
 
-    /*
+     
     GraphWeighted* A = nullptr;
     GraphWeighted* B = nullptr;
     vector<Lisa::Biclique*>* bicliques = nullptr;
@@ -45,13 +46,25 @@ int main(int argc, char const *argv[])
     //A->printAsMatrix();
     TIMERSTART(mult);
     if(argc < 4) {
-        auto C = Lisa::matrix_multiplication_w(A, B);
+        TIMERSTART(one);
+        //auto C = Lisa::matrix_multiplication_w(A, B);
+        TIMERSTOP(one);
+        //C->print();
+        TIMERSTART(transpose);
+        B->transpose();
+        TIMERSTOP(transpose);
+        TIMERSTART(two);
+        auto C = Lisa::matrix_multiplication_w(A, B, true);
+        TIMERSTOP(two);
+        //C->print();
         //C->print();
     } else if (argc >= 4) {
         auto C = matrix_multiplication_w(A, B, bicliques);
         C->print();
         //C = matrix_multiplication_w(A,B);
         //C->print();
+        
+        /*
         for (auto j : *bicliques) {
             cout << "S: " ;
             for(auto k : j->S) {
@@ -68,10 +81,11 @@ int main(int argc, char const *argv[])
             }
             cout << endl;
         }
+        */
         
     }
     TIMERSTOP(mult);
-    */
+    
 
 
     /*
@@ -197,7 +211,7 @@ int main(int argc, char const *argv[])
     */
 
 
-    /*
+    
     //Test con bicliques con pesos.
 
     // Con A un grafo al cual ya se le extrajeron los bicliques, 
@@ -205,10 +219,12 @@ int main(int argc, char const *argv[])
     // y X un Biclique(S,C).
     // Realizar una multiplicacion vector matriz con CxB y luego adicionar a cada par resultante en AxB presente en S. 
 
+
+    /*
     GraphWeighted A; 
     GraphWeighted B;
-    vector<Biclique*>* bicliques = new vector<Biclique*>();
-    bicliques->push_back(new Biclique());
+    vector<Lisa::Biclique*>* bicliques = new vector<Lisa::Biclique*>();
+    bicliques->push_back(new Lisa::Biclique());
 
     //Build A 
     Node* n = new Node(1, true);
@@ -288,25 +304,40 @@ int main(int argc, char const *argv[])
 
     cout << endl << "Matriz B: " << endl;
     B.printAsMatrix();
-
-    cout << endl << "Biclique: " << endl; 
-    printBicliqueAsMatrix(bicliques->front());
-    cout << endl; 
-
-    auto C = matrix_multiplication_w(&A, &B, bicliques);
-    C->printAsMatrix();
+    
     
 
-    auto D = matrix_multiplication_w(&A, &B); 
+    //cout << endl << "Biclique: " << endl; 
+    //Lisa::printBicliqueAsMatrix(bicliques->front());
+    //cout << endl; 
+
+    //auto C = Lisa::matrix_multiplication_w(&A, &B, bicliques);
+    //C->printAsMatrix();
+    
+
+    cout << "Res:" << endl;
+    TIMERSTART(one);
+    auto D = Lisa::matrix_multiplication_w(&A, &B); 
+    TIMERSTOP(one);
     D->printAsMatrix();
-    
-    auto F = vector_matrix_multiplication_w(bicliques->front()->C_w, &B);
-    for (auto i : *F) {
-        cout << "(" <<i.first << "," << i.second << ") ";
-    }
-    cout << endl;    
-    */ 
 
+    cout << endl << "Matrix B transpose" << endl;
+    B.transpose(); 
+    B.printAsMatrix();
+    
+    cout << "Res: " << endl;
+    TIMERSTART(two);
+    auto G = Lisa::matrix_multiplication_w(&A, &B, true); 
+    TIMERSTOP(two);
+    G->printAsMatrix();
+
+    //auto F = Lisa::vector_matrix_multiplication_w(bicliques->front()->C_w, &B);
+    //for (auto i : *F) {
+    //    cout << "(" <<i.first << "," << i.second << ") ";
+    //}
+    cout << endl;    
+    
+    */
     //if (argc != 4) return 0; 
 
     return 0;

@@ -77,6 +77,26 @@ namespace Lisa
         return; 
     }
 
+    GraphWeighted* matrix_multiplication_w(GraphWeighted* A, GraphWeighted* B, std::vector<Biclique*>* bicliques, bool sw)
+    {
+        if (sw) {
+            return matrix_multiplication_w_transposed(A, B, bicliques);
+        } else {
+            return matrix_multiplication_w(A,B, bicliques);
+        }
+        return nullptr;
+    }
+
+    GraphWeighted* matrix_multiplication_w(GraphWeighted* A, GraphWeighted* B, bool sw)
+    {
+        if (sw) {
+            return matrix_multiplication_w_transposed(A, B);
+        } else {
+            return matrix_multiplication_w(A,B);
+        }
+        return nullptr;
+    }
+
     GraphWeighted* matrix_multiplication_w(GraphWeighted* A, GraphWeighted* B) 
     {
         //se pueden omitir algunas columnas
@@ -84,7 +104,7 @@ namespace Lisa
         //omp_set_num_threads(8);
         GraphWeighted* C = new GraphWeighted();
         Node* temp = nullptr; 
-        //uint64_t jMax = B->maxValueEdge(); 
+        uint64_t jMax = B->maxValueEdge(); 
         //uint64_t jMax = A->maxValueEdge();
         //cout << jMax << endl;
         //#pragma omp parallel for
@@ -92,7 +112,7 @@ namespace Lisa
             Node* Ai = A->at(i);
             //cout << "fila:" << Ai->getId() << endl;
             temp = new Node(Ai->getId(), true);
-            uint64_t jMax = Ai->getBackAdjacent();
+            //uint64_t jMax = Ai->getBackAdjacent();
             C->insert(temp);
             if(Ai->edgesSize() == 0) continue;
             uInt index = 0; 
@@ -190,7 +210,64 @@ namespace Lisa
         return C;
     }
 
-    vector<pair<uInt,uInt>>* vector_matrix_multiplication_w(vector<pair<uInt, uInt>> v, GraphWeighted * B)
+    
+
+    GraphWeighted* matrix_multiplication_w_transposed(GraphWeighted* A, GraphWeighted* B)
+    {
+        // row x row  multiplication 
+        omp_set_num_threads(8);
+        GraphWeighted* C = new GraphWeighted();
+        
+        if (not B->isTransposed()) {
+            B->transpose(); 
+        }
+
+        if (A->isTransposed()) {
+            A->transpose(); 
+        }
+        std::mutex mtx;
+        #pragma omp parallel for
+        for (size_t i = 0; i < A->size(); i++) {
+            Node* Ai = A->at(i);
+            if (Ai->edgesSize() == 0) continue;
+            Node* temp = new Node(Ai->getId(), true);
+            //uint64_t jMax = Ai->getBackAdjacent();
+            mtx.lock();
+            cout << Ai->getId() << endl;
+            C->insert(temp);
+            mtx.unlock();
+            for (auto Bj = B->begin(); Bj != B->end(); Bj++){
+                if ((*Bj)->edgesSize() == 0) continue;
+                uInt sum = 0; 
+                auto adjB = (*Bj)->wAdjacentsBegin(); 
+                for (auto adjA = Ai->wAdjacentsBegin(); adjA != Ai->wAdjacentsEnd(); adjA++) {
+                    while ((*adjB).first < (*adjA).first and adjB != (*Bj)->wAdjacentsEnd()) {
+                        adjB++; 
+                    } 
+                    if ((*adjA).first == (*adjB).first) {
+                        sum += (*adjA).second * (*adjB).second; 
+                    }  
+                }
+
+                if (sum > 0) {
+                    temp->addAdjacent((*Bj)->getId(), sum);
+                }
+            }
+            //temp->print();
+        }
+        return C;
+    }
+
+    GraphWeighted* matrix_multiplication_w_transposed(GraphWeighted* A, GraphWeighted* B, vector<Biclique*>* bicliques)
+    {
+        // row x row  multiplication 
+        GraphWeighted* C = new GraphWeighted();
+        return C;
+    }
+
+
+
+    vector<pair<uInt, uInt>>* vector_matrix_multiplication_w(vector<pair<uInt, uInt>> v, GraphWeighted *B)
     {
         vector<pair<uInt,uInt>>* res = new vector<pair<uInt,uInt>>();
         Graph* C = new Graph();
@@ -212,7 +289,6 @@ namespace Lisa
                 res->push_back(make_pair(j, sum));
             }
         }
-
         return res;
     }
 
@@ -251,7 +327,7 @@ namespace Lisa
         return C;
     }
 
-    Graph *matrix_multiplication(Graph* A, Graph* B, Biclique* X)
+    Graph* matrix_multiplication(Graph* A, Graph* B, Biclique* X)
     {
         assert(not X->S.empty());
         assert(not X->C.empty());
