@@ -25,9 +25,10 @@ HEADER	=       ../biclique_extraction/Graph/Graph.hpp \
 OUT	=           matrix_multiplicator
 CC	 =          g++
 FLAGS =         -c  -std=c++20 -DBITS32 -fopenmp
-DEBUG_FLAGS =	-O0 -g
+DEBUG_FLAGS =	-O0 -g -Wall
 OPT = 			-O3
 LFLAGS	=       -lm -lpthread -fopenmp
+#BOOST_FLAGS = -I ~/boost/boost_1_83_0/ -L ~/boost/stage/lib/ 
 				
 # Define una variable que se utilizará para pasar las banderas
 # de compilación al objetivo "all" y sus dependencias

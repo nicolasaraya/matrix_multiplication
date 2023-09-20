@@ -1,7 +1,8 @@
 #ifndef MATRIX_MULTIPLICATION
 #define MATRIX_MULTIPLICATION
 
-#define NUM_THREADS 4
+#define NUM_THREADS 1
+
 
 #include "../biclique_extraction/Graph/Graph.hpp"
 #include "../biclique_extraction/Graph/GraphWeighted.hpp"
@@ -40,7 +41,6 @@ namespace Lisa
     void printBicliqueAsMatrix(Biclique*);
     void printCompactStructure(CompactBicliqueWeighted*);
 
-
     GraphWeighted* matrix_multiplication_w(GraphWeighted*, GraphWeighted*, bool);
     GraphWeighted* matrix_multiplication_w(GraphWeighted*, GraphWeighted*, std::vector<Biclique*>*, bool);
     GraphWeighted* matrix_multiplication_w(GraphWeighted*, GraphWeighted*, CompactBicliqueWeighted*, bool);
@@ -51,8 +51,8 @@ namespace Lisa
     //GraphWeighted* matrix_multiplication_w_transposed(GraphWeighted*, GraphWeighted*, std::vector<Biclique*>*);
     //GraphWeighted* matrix_multiplication_w_transposed(GraphWeighted*, GraphWeighted*, CompactBicliqueWeighted*);
     std::vector<std::pair<uInt,uInt>>* vector_matrix_multiplication_w(std::vector<std::pair<uInt, uInt>>, GraphWeighted*); 
-    std::vector<std::pair<uInt,uInt>>* vector_matrix_t_multiplication_w(std::vector<std::pair<uInt, uInt>>, GraphWeighted*); 
-    std::vector<std::vector<std::pair<uInt,uInt>>*>* compactBiclique_matrixTransposed_multiplication_w(CompactBicliqueWeighted*, GraphWeighted*);
+    std::vector<std::pair<uInt,uInt>>* vector_matrix_t_multiplication_w(std::vector<std::pair<uInt, uInt>>, GraphWeighted*);
+    std::vector<std::vector<std::pair<uInt,uInt>>*>* compute_compact_struct_weight(CompactBicliqueWeighted*, GraphWeighted*, bool);  
 
     Graph* matrix_multiplication(Graph*, Graph*);
     Graph* matrix_multiplication(Graph*, Graph*, Biclique*);

@@ -55,13 +55,7 @@ int main(int argc, char const *argv[])
     vector<Lisa::Biclique*>* std_bicliques = nullptr; 
     Lisa::CompactBicliqueWeighted* compBicl = nullptr;
 
-    if (arguments["biclique"].size() > 0) {
-        std_bicliques = Lisa::load_biclique_w(arguments["biclique"]);
-    }
-
-    if (arguments["compact"].size() > 0) {
-        compBicl = Lisa::load_CompactBiclique_w(arguments["compact"]);
-    }
+    
 
     bool optimize = atoi(arguments["optimize"].c_str());
     bool boost = atoi(arguments["boost"].c_str());
@@ -74,9 +68,10 @@ int main(int argc, char const *argv[])
         GraphWeighted* B = nullptr; 
         GraphWeighted* C = nullptr;
 
+        if (arguments["biclique"].size() > 0) std_bicliques = Lisa::load_biclique_w(arguments["biclique"]);
+        if (arguments["compact"].size() > 0) compBicl = Lisa::load_CompactBiclique_w(arguments["compact"]);
         if (arguments["graphA"].size() > 0) A = new GraphWeighted(arguments["graphA"]); 
         if (arguments["graphB"].size() > 0) B = new GraphWeighted(arguments["graphB"]);
-
 
         if (A == nullptr and B == nullptr) {
             std::cerr << "No graph file" << std::endl; 
@@ -143,7 +138,14 @@ int main(int argc, char const *argv[])
         }
 
         delete A;
-        delete B; 
+        delete B;
+        if (std_bicliques) {
+            for (auto i : *std_bicliques) {
+                delete i;
+            }
+            delete std_bicliques;
+        }
+        if (compBicl) delete compBicl;
     }
     
     

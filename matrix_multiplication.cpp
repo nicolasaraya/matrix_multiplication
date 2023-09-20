@@ -106,7 +106,7 @@ namespace Lisa
     {
         for (size_t i = 0; i < B->S.size(); i++) {
             if(i < B->S.at(i) - 1) {
-                int temp = i; 
+                uInt temp = i; 
                 while(temp < B->S.at(i)) {
                     cout << "Node " << temp << ": -" << endl;
                     temp++; 
@@ -116,7 +116,7 @@ namespace Lisa
             if (not B->C_w.empty()) {
                 for(size_t j = 0; j < B->C_w.size(); j++) {
                     if (j < B->C_w.at(j).first ) {
-                        int temp2 = j; 
+                        uInt temp2 = j; 
                         while(temp2 < B->C_w.at(j).first - 1) {
                             cout << "0 ";
                             temp2++; 
@@ -184,12 +184,14 @@ namespace Lisa
             assert(X->C.empty());
             assert(not X->C_w.empty());
             std::vector<std::pair<uInt,uInt>>* vec = nullptr; 
-
+            
+            TIMERSTART(compute);
             if (sw) {
                 vec = vector_matrix_t_multiplication_w(X->C_w, B);
             } else {
                 vec = vector_matrix_multiplication_w(X->C_w, B);
             }   
+            TIMERSTOP(compute);
 
             for (auto i : X->S) {
                 Node* node = C->find(i); 
@@ -197,7 +199,7 @@ namespace Lisa
                     //cout << "no encuentra" << i << endl;
                     node = new Node(i, true); 
                     C->insert(node);
-                    C->sort();
+                    C->sort(); //necesario por que puede haber un S[i] repetido en otro biclique.
                 } else {
                     //cout << "encuentra " << i << endl;
                 }
@@ -205,8 +207,8 @@ namespace Lisa
                     if ( not node->increaseWeight(j.first, j.second) ) {
                         //cout << "añade (" << j.first << "," << j.second << ") en " << i << endl;
                         node->addAdjacent(j.first, j.second);
-                        node->sort();
                     }
+                    node->sort();
                 }
                 //node->print();
             }
@@ -226,36 +228,30 @@ namespace Lisa
         } else {
             C = matrix_multiplication_w(A, B);
         }
-
-        std::vector<std::vector<std::pair<uInt,uInt>>*> res; 
-
-        for (auto i : compBicl->c_bicliques) {
-            if (sw) {
-                res.push_back(vector_matrix_t_multiplication_w(i, B));  
-            } else {
-                res.push_back(vector_matrix_multiplication_w(i, B));
-            }
-        }
-
-
+        TIMERSTART(compute);
+        std::vector<std::vector<std::pair<uInt,uInt>>*>* res = compute_compact_struct_weight(compBicl, B, sw); 
+        TIMERSTOP(compute);
         TIMERSTART(remplazing_comp);
         for (auto i : compBicl->linked_s) {
             Node* node = C->find(i.first);
             if (node == nullptr) {
                 node = new Node(i.first, true);
                 C->insert(node);
-                C->sort();
             }
             for (auto j : i.second) {
-                for (auto k : *res.at(j)) {
+                for (auto k : *(res->at(j))) {
                     if (not node->increaseWeight(k.first, k.second)) {
-                        node->addAdjacent(k.first, k.second);
-                        node->sort();
+                        node->addAdjacent(k.first, k.second);       
                     }
                 }
+                node->sort();
             }
         }
-        res.clear();
+        C->sort();
+        //for (auto i : *res) {
+        //    delete i;
+        //}
+        //delete res;
         TIMERSTOP(remplazing_comp);
         return C; 
     }
@@ -348,7 +344,7 @@ namespace Lisa
     GraphWeighted* matrix_multiplication_w_transposed(GraphWeighted* A, GraphWeighted* B)
     {
         // row x row  multiplication 
-        omp_set_num_threads(NUM_THREADS);
+        //omp_set_num_threads(NUM_THREADS);
         std::cout << "Using " << NUM_THREADS << " threads" << std::endl;
         GraphWeighted* C = new GraphWeighted();
         
@@ -360,16 +356,16 @@ namespace Lisa
             A->transpose(); 
         }
         std::mutex mtx;
-        #pragma omp parallel for
+        //#pragma omp parallel for
         for (size_t i = 0; i < A->size(); i++) {
             Node* Ai = A->at(i);
             if (Ai->edgesSize() == 0) continue;
             Node* temp = new Node(Ai->getId(), true);
             //uint64_t jMax = Ai->getBackAdjacent();
-            mtx.lock();
+            //mtx.lock();
             //cout << Ai->getId() << endl;
             C->insert(temp);
-            mtx.unlock();
+            //mtx.unlock();
             for (auto Bj = B->begin(); Bj != B->end(); Bj++){
                 if ((*Bj)->edgesSize() == 0) continue;
                 uInt sum = 0; 
@@ -377,7 +373,7 @@ namespace Lisa
                 for (auto adjA = Ai->wAdjacentsBegin(); adjA != Ai->wAdjacentsEnd(); adjA++) {
                     while ((*adjB).first < (*adjA).first and adjB != (*Bj)->wAdjacentsEnd()) {
                         adjB++; 
-                    } 
+                    }
                     if ((*adjA).first == (*adjB).first) {
                         sum += (*adjA).second * (*adjB).second; 
                     }  
@@ -424,10 +420,10 @@ namespace Lisa
         if (not B->isTransposed()) B->transpose();
         vector<pair<uInt,uInt>>* res = new vector<pair<uInt,uInt>>();
         
-        for (auto Bj = B->begin(); Bj != B->end(); Bj++) {
+        for (auto Bj = B->begin(); Bj != B->end(); Bj++) { // Bj j-esima fila en B; 
             if ((*Bj)->edgesSize() == 0) continue;
             uInt sum = 0;
-            auto adjB = (*Bj)->wAdjacentsBegin();
+            auto adjB = (*Bj)->wAdjacentsBegin();  //adjB iterador de lista de adyacencia de la fila j-esima en B.
             for (auto adjA = v.begin(); adjA != v.end(); adjA++) {
                 while ((*adjB).first < (*adjA).first and adjB != (*Bj)->wAdjacentsEnd()) {
                     adjB++; 
@@ -440,6 +436,50 @@ namespace Lisa
                 res->push_back(make_pair((*Bj)->getId(), sum));
             }
         }
+        return res;
+    }
+
+    std::vector<std::vector<std::pair<uInt,uInt>>*>* compute_compact_struct_weight(CompactBicliqueWeighted* compBicl, GraphWeighted* B, bool sw)
+    {
+        typedef std::vector<std::vector<std::pair<uInt,uInt>>*> resArray;
+        typedef std::vector<std::pair<uInt,uInt>>::iterator Iter;
+
+        auto res = new resArray(compBicl->c_bicliques.size(), new std::vector<std::pair<uInt,uInt>>);
+        
+        //if (sw) {
+            if (not B->isTransposed()) B->transpose();
+        
+            for (auto Bj = B->begin(); Bj != B->end(); Bj++) {
+                if ((*Bj)->edgesSize() == 0) continue;
+                
+                std::vector<Iter> iterators;
+                std::vector<uInt> sums; 
+
+                auto adjB = (*Bj)->wAdjacentsBegin(); 
+
+                //TIMERSTART(prueba);
+                while (adjB != (*Bj)->wAdjacentsEnd()) {
+                    for (size_t i = 0; i < compBicl->c_bicliques.size(); i++) {
+                        if(adjB == (*Bj)->wAdjacentsBegin()) {
+                            iterators.push_back(compBicl->c_bicliques.at(i).begin());
+                            sums.push_back(0);
+                        }
+                        while( (*iterators.at(i)).first < (*adjB).first) {
+                            iterators[i]++;
+                        }
+                        if ((*iterators.at(i)).first == (*adjB).first) {
+                            sums[i] += (*iterators.at(i)).second * (*adjB).second; 
+
+                            if ((*adjB).first == (*Bj)->getBackAdjacent()) {
+                                res->at(i)->push_back(std::make_pair((*Bj)->getId(), sums[i]));
+                            }
+                        }
+
+                    }
+                    adjB++;
+                }  
+            }
+        //}
         return res;
     }
 
