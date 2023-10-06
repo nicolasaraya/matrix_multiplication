@@ -13,10 +13,20 @@ int main(int argc, char const *argv[])
         {"optimize", "0"},
         {"weighted", "1"},
         {"print", "0"},
-        {"buildTxt", "0"}
+        {"buildTxt", "0"},
+        {"S", ""},
+        {"SS", ""},
+        {"C", ""},
+        {"CC", ""}
         };
 
     auto arguments = parseArguments(argc, argv, &input_arguments);
+
+    std::cout << "**** Params ****" << std::endl; 
+    for(auto i : arguments) {
+        std::cout << i.first << ": " << i.second << std::endl;
+    }
+    std::cout << "****************" << std::endl;
 
     /*
     boost::ublas::matrix<uInt> matrixA;
@@ -49,13 +59,8 @@ int main(int argc, char const *argv[])
     */
 
     
-    
-    
-    
     vector<Lisa::Biclique*>* std_bicliques = nullptr; 
     Lisa::CompactBicliqueWeighted* compBicl = nullptr;
-
-    
 
     bool optimize = atoi(arguments["optimize"].c_str());
     bool boost = atoi(arguments["boost"].c_str());
@@ -67,7 +72,8 @@ int main(int argc, char const *argv[])
         GraphWeighted* A = nullptr; 
         GraphWeighted* B = nullptr; 
         GraphWeighted* C = nullptr;
-
+        
+        if ((arguments["S"].size() > 0) and (arguments["SS"].size() > 0) and (arguments["C"].size() > 0) and (arguments["CC"].size() > 0)) compBicl = Lisa::load_CompactBiclique_w_bin(arguments["S"], arguments["SS"], arguments["C"], arguments["CC"]);
         if (arguments["biclique"].size() > 0) std_bicliques = Lisa::load_biclique_w(arguments["biclique"]);
         if (arguments["compact"].size() > 0) compBicl = Lisa::load_CompactBiclique_w(arguments["compact"]);
         if (arguments["graphA"].size() > 0) A = new GraphWeighted(arguments["graphA"]); 
@@ -85,7 +91,7 @@ int main(int argc, char const *argv[])
                 B = new GraphWeighted(arguments["graphA"]); 
             }
             if (compBicl) {
-                std::cout << "case 1" << std::endl;
+                std::cout << "Compute AxA with compact struct" << std::endl;
                 TIMERSTART(compact_struct);
                 C = Lisa::matrix_multiplication_w(A, B, compBicl, optimize);
                 TIMERSTOP(compact_struct)
@@ -93,7 +99,7 @@ int main(int argc, char const *argv[])
                 delete C;
             }
             if (std_bicliques) {
-                std::cout << "case 2" << std::endl;
+                std::cout << "Compute AxA with standard biclique representation" << std::endl;
                 TIMERSTART(stdbicliques);
                 C = Lisa::matrix_multiplication_w(A, B, std_bicliques, optimize);
                 TIMERSTOP(stdbicliques);
@@ -101,7 +107,7 @@ int main(int argc, char const *argv[])
                 delete C; 
             } 
             if (compBicl == nullptr and std_bicliques == nullptr) {
-                std::cout << "case 3" << std::endl;
+                std::cout << "Compute AxA" << std::endl;
                 TIMERSTART(standard);
                 C = Lisa::matrix_multiplication_w(A, B, optimize);
                 TIMERSTOP(standard);
@@ -112,7 +118,7 @@ int main(int argc, char const *argv[])
 
         if (A != nullptr and B != nullptr) {
             if (compBicl) { 
-                std::cout << "case 4" << std::endl;
+                std::cout << "Compute AxB with compact struct" << std::endl;
                 TIMERSTART(compact_struct);
                 C = Lisa::matrix_multiplication_w(A, B, compBicl, optimize);
                 TIMERSTOP(compact_struct);
@@ -120,7 +126,7 @@ int main(int argc, char const *argv[])
                 delete C;
             }
             if (std_bicliques) {
-                std::cout << "case 5" << std::endl;
+                std::cout << "Compute AxB with standard biclique representation" << std::endl;
                 TIMERSTART(stdbicliques);
                 C = Lisa::matrix_multiplication_w(A, B, std_bicliques, optimize);                 
                 TIMERSTOP(stdbicliques);
@@ -128,7 +134,7 @@ int main(int argc, char const *argv[])
                 delete C;
             } 
             if (not compBicl and not std_bicliques) {
-                std::cout << "case 6" << std::endl;
+                std::cout << "Compute AxB" << std::endl;
                 TIMERSTART(standard);
                 C = Lisa::matrix_multiplication_w(A, B, optimize);
                 TIMERSTOP(standard);

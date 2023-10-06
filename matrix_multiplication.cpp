@@ -96,9 +96,77 @@ namespace Lisa
         return compBicl;
     }
 
-    CompactBicliqueWeighted* load_CompactBiclique_w_bin(std::string path) 
+    CompactBicliqueWeighted* load_CompactBiclique_w_bin(std::string S_path, std::string SS_path, std::string C_path, std::string CC_path) 
     {
+        ifstream S, SS, C, CC;
+        S.open(S_path, ios::in | ios::binary);
+        SS.open(SS_path, ios::in | ios::binary);
+        C.open(C_path, ios::in | ios::binary);
+        CC.open(CC_path, ios::in | ios::binary);
+
+        assert(S.is_open());
+        assert(SS.is_open());
+        assert(C.is_open());
+        assert(CC.is_open());
+        
         CompactBicliqueWeighted* compBicl = new CompactBicliqueWeighted();
+        typedef bool binVar;
+        uInt* buffer = new uInt(0); 
+        binVar* binBuffer = new binVar(0);
+        uInt S_size = 0; 
+
+        SS.read((char*)binBuffer, sizeof(binVar)); // 1
+        while (not SS.eof()) {
+            SS.read((char*)binBuffer, sizeof(binVar));
+            if (*binBuffer == 1 or SS.eof()) {
+                //cout << S_size << endl;
+                vector<uInt> vec; 
+                uInt index = 0;
+                for (size_t i = 0; i <= S_size; i++) { 
+                    S.read((char*)buffer, sizeof(uInt));
+                    if (i == 0) {
+                        index = *buffer;
+                    } else {
+                        vec.push_back(*buffer);
+                    }
+                }
+                compBicl->linked_s.push_back(make_pair(index, vec));
+                S_size = 0;
+            } else {
+                S_size++;
+            }
+        }
+
+        CC.read((char*)binBuffer, sizeof(binVar)); // 1
+        uInt C_size = 0;
+        while (not CC.eof()) {
+            CC.read((char*)binBuffer, sizeof(binVar)); // 1
+            if (*binBuffer == 1 or CC.eof()) {
+                //cout << C_size << endl;
+                CompactBicliqueWeighted::C_values vec; 
+                for (size_t i = 0; i < C_size; i++) {
+                    C.read((char*)buffer, sizeof(uInt));
+                    uInt first = *buffer;
+                    C.read((char*)buffer, sizeof(uInt));
+                    uInt second = *buffer;
+                    vec.push_back(make_pair(first,second));
+                }
+                compBicl->c_bicliques.push_back(vec);
+                C_size = 0;
+            }
+            else {
+                C_size++;
+            }
+        }
+
+        S.close();
+        SS.close();
+        C.close();
+        CC.close();
+        //printCompactStructure(compBicl);
+        delete buffer;
+        delete binBuffer;
+
         return compBicl;
     }
 
@@ -196,25 +264,19 @@ namespace Lisa
             for (auto i : X->S) {
                 Node* node = C->find(i); 
                 if (node == nullptr) {
-                    //cout << "no encuentra" << i << endl;
                     node = new Node(i, true); 
                     C->insert(node);
                     C->sort(); //necesario por que puede haber un S[i] repetido en otro biclique.
-                } else {
-                    //cout << "encuentra " << i << endl;
                 }
                 for (auto j : *vec) {
                     if ( not node->increaseWeight(j.first, j.second) ) {
-                        //cout << "añade (" << j.first << "," << j.second << ") en " << i << endl;
                         node->addAdjacent(j.first, j.second);
                     }
                     node->sort();
                 }
-                //node->print();
             }
             delete vec; 
         } 
-
         TIMERSTOP(remplazing_std_bicl);
         return C;
     }
@@ -260,36 +322,32 @@ namespace Lisa
     GraphWeighted* matrix_multiplication_w(GraphWeighted* A, GraphWeighted* B) 
     {
         if (B->isTransposed()) B->transpose();
-        //se pueden omitir algunas columnas
-        vector<uInt> skip; 
-        //omp_set_num_threads(8);
+        vector<uInt> skip;  //se pueden omitir algunas columnas
+        #if defined(parallel)
+            omp_set_num_threads(8);
+        #endif
         GraphWeighted* C = new GraphWeighted();
         Node* temp = nullptr; 
         //uint64_t jMax = B->maxValueEdge(); 
         uint64_t jMax = A->maxValueEdge();
-        //cout << jMax << endl;
-        //#pragma omp parallel for
+        #if defined(parallel)
+            #pragma omp parallel for
+        #endif
         for (size_t i = 0; i < A->size(); i++) {
             Node* Ai = A->at(i);
-            //cout << "fila:" << Ai->getId() << endl;
             temp = new Node(Ai->getId(), true);
-            //uint64_t jMax = Ai->getBackAdjacent();
             C->insert(temp);
             if(Ai->edgesSize() == 0) continue;
             uInt index = 0; 
             for(size_t j = 0; j <= jMax + 1; j++) {
-                //cout << "columna: " << j << endl;
-                //if(j != 12) continue;
                 if(not skip.empty() and j == skip[index]){
                     index++;
                     if(index >= skip.size()) index--;
-                    //continue;
                 }
                 uint64_t sum = 0; 
                 uint64_t count_zero = 0;
                 size_t k = 0;
                 for(auto Aik = Ai->wAdjacentsBegin(); Aik != Ai->wAdjacentsEnd(); Aik++) {
-                    //if(sw) break; 
                     for (; k < B->size(); k++) {
                         //if(sw) break;
                         Node* Bk = B->at(k);
@@ -299,55 +357,37 @@ namespace Lisa
                                 count_zero++;
                             }
                         }
-                        //if((*Aik).first > Bk->getBackAdjacent()) continue; 
                         if (Bk->getId() == (*Aik).first) {
-                            //cout << "Node: " << temp->getId() << endl;
-                            //cout << "j: " << j << endl;
-                            //cout << "Aik: " << (*Aik).first << " " << (*Aik).second << endl;
-                            //cout << "Bk: " << Bk->getId() << endl;
-                            //cout << "Search: " << j << " in " << Bk->getId() << endl;  
                             auto Bkj_w = Bk->findAdjacentWeighted(j);
-                            //cout << "Res search: " << Bkj_w << endl;
                             if (Bkj_w > 0) {
-                                //if(7 == temp->getId()) cout << Ai->getId() << "!" << (*Aik).first << "//" << Bk->getId()<< "$" << j << endl;
-                                //cout << "Sum: " << sum << endl;
-                                //cout << (*Aik).second << " " << Bkj_w << endl;
                                 sum += (*Aik).second * Bkj_w; 
-                                //sum += (*Aik).second * j;
-                                //cout << "Sum increased: " << sum << endl;
                             } 
-                            //cout << "######" << endl;
                             break;
                         }
                     }
                 }
-                //cout << "push: " << temp->getId() << endl;
-                //cout << j << " " << sum << endl;
                 if(sum > 0) {
                     temp->addAdjacent(j, sum);
                 }
                 
                 if(i == 0 && count_zero == B->size()){
                     skip.push_back(j);
-                    //cout << "push" << j << endl;
-                } else if (i == 0) {
-                    //cout << "count zero: " << count_zero << endl;
                 }
                 
             }
-            //temp->print();
         }
         return C;
     }
 
     
-    GraphWeighted* matrix_multiplication_w_transposed(GraphWeighted* A, GraphWeighted* B)
+    GraphWeighted* matrix_multiplication_w_transposed(GraphWeighted* A, GraphWeighted* B) // row x row  multiplication
     {
-        // row x row  multiplication 
-        //omp_set_num_threads(NUM_THREADS);
-        std::cout << "Using " << NUM_THREADS << " threads" << std::endl;
+        #if defined(parallel)
+            omp_set_num_threads(THREADS);
+            std::cout << "Using " << THREADS << " threads" << std::endl;
+        #endif
+
         GraphWeighted* C = new GraphWeighted();
-        
         if (not B->isTransposed()) {
             B->transpose(); 
         }
@@ -355,8 +395,10 @@ namespace Lisa
         if (A->isTransposed()) {
             A->transpose(); 
         }
+        #if defined(parallel)
         std::mutex mtx;
-        //#pragma omp parallel for
+        #pragma omp parallel for
+        #endif
         for (size_t i = 0; i < A->size(); i++) {
             Node* Ai = A->at(i);
             if (Ai->edgesSize() == 0) continue;
