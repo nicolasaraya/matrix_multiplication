@@ -1,32 +1,89 @@
 #include "matrix_multiplication.hpp"
 #include "boost_multiplication.hpp"
 
+#include "string.h"
+
+const std::string modes[2] = {"pow", "mult"};
+
+using namespace mw; 
+
 int main(int argc, char const *argv[])
 {
-
     std::unordered_map<std::string, std::string> input_arguments{
-        {"graphA", ""},
+        {"graph", ""}, 
         {"graphB", ""}, 
         {"compact", ""},
         {"biclique", ""}, 
-        {"boost", "0"},
-        {"optimize", "0"},
-        {"weighted", "1"},
         {"print", "0"},
-        {"buildTxt", "0"},
-        {"S", ""},
-        {"SS", ""},
-        {"C", ""},
-        {"CC", ""}
+        {"buildFile", "0"}, 
+        {"mode", "pow"}
         };
 
     auto arguments = parseArguments(argc, argv, &input_arguments);
+    bool bin = false;
 
     std::cout << "**** Params ****" << std::endl; 
     for(auto i : arguments) {
         std::cout << i.first << ": " << i.second << std::endl;
     }
     std::cout << "****************" << std::endl;
+
+    #if defined(parallel)
+        std::cout << "using " << THREADS << " threads" << std::endl;
+    #endif
+
+    assert(arguments["graph"].size() > 0);
+    
+    if(arguments["graph"].find(".bin") != std::string::npos) {
+            bin = true; 
+    } else if (arguments["graph"].find(".txt") != std::string::npos) {
+            bin = false;
+    }
+
+    GraphWeighted* A = nullptr; 
+    GraphWeighted* B = nullptr;
+    GraphWeighted* C = nullptr; 
+    CompactBiclique* compact = nullptr;
+
+    if (strcmp(arguments["mode"].c_str(), modes[0].c_str()) == 0) {
+        A = new GraphWeighted(arguments["graph"]); 
+        if (arguments["compact"].size() > 0)  {
+            if (bin) {
+                compact = load_CompactBiclique_bin(arguments["compact"]);
+            } else {
+                compact = load_CompactBiclique(arguments["compact"]);
+            }
+        }
+        if (compact != nullptr) {
+            std::cout << "*** Pow with compact bicliques***" << std::endl;
+            C = matrix_pow(A, compact);
+        }
+        else {
+            std::cout << "*** Pow std ***" << std::endl;
+            B = new GraphWeighted(arguments["graph"]);
+            C = matrix_multiplication(A,B);
+        }
+    } else if (strcmp(arguments["mode"].c_str(), modes[0].c_str()) == 0) {
+        assert(arguments["graphB"].size() > 0); 
+    }
+
+    if (arguments["print"] == "1") C->print();
+
+    if (A != nullptr) delete A;
+    if (B != nullptr) delete B;
+    if (C != nullptr) delete C;
+    if (compact != nullptr) delete compact;
+    
+    
+
+    //cout << "##########" << endl;
+    //C->printAsMatrix();
+    //cout << "******" << endl;
+    //C->print();
+    //C->setPath("res.txt");
+    //C->writeAdjacencyList();
+
+
 
     /*
     boost::ublas::matrix<uInt> matrixA;
@@ -57,103 +114,6 @@ int main(int argc, char const *argv[])
     TIMERSTOP(BOOST_MULTIPLICATION);
 
     */
-
-    
-    vector<Lisa::Biclique*>* std_bicliques = nullptr; 
-    Lisa::CompactBicliqueWeighted* compBicl = nullptr;
-
-    bool optimize = atoi(arguments["optimize"].c_str());
-    bool boost = atoi(arguments["boost"].c_str());
-    bool weighted = atoi(arguments["weighted"].c_str());
-    bool print = atoi(arguments["print"].c_str());
-    bool buildTxt = atoi(arguments["buildTxt"].c_str());
-
-    if (weighted) {
-        GraphWeighted* A = nullptr; 
-        GraphWeighted* B = nullptr; 
-        GraphWeighted* C = nullptr;
-        
-        if ((arguments["S"].size() > 0) and (arguments["SS"].size() > 0) and (arguments["C"].size() > 0) and (arguments["CC"].size() > 0)) compBicl = Lisa::load_CompactBiclique_w_bin(arguments["S"], arguments["SS"], arguments["C"], arguments["CC"]);
-        if (arguments["biclique"].size() > 0) std_bicliques = Lisa::load_biclique_w(arguments["biclique"]);
-        if (arguments["compact"].size() > 0) compBicl = Lisa::load_CompactBiclique_w(arguments["compact"]);
-        if (arguments["graphA"].size() > 0) A = new GraphWeighted(arguments["graphA"]); 
-        if (arguments["graphB"].size() > 0) B = new GraphWeighted(arguments["graphB"]);
-
-        if (A == nullptr and B == nullptr) {
-            std::cerr << "No graph file" << std::endl; 
-            return 0;
-        }
-        
-        if ((A != nullptr and B == nullptr) or (A == nullptr and B != nullptr)) {
-            if (A == nullptr) {
-                A = new GraphWeighted(arguments["graphB"]);
-            } else {
-                B = new GraphWeighted(arguments["graphA"]); 
-            }
-            if (compBicl) {
-                std::cout << "Compute AxA with compact struct" << std::endl;
-                TIMERSTART(compact_struct);
-                C = Lisa::matrix_multiplication_w(A, B, compBicl, optimize);
-                TIMERSTOP(compact_struct)
-                if (print) C->print();
-                delete C;
-            }
-            if (std_bicliques) {
-                std::cout << "Compute AxA with standard biclique representation" << std::endl;
-                TIMERSTART(stdbicliques);
-                C = Lisa::matrix_multiplication_w(A, B, std_bicliques, optimize);
-                TIMERSTOP(stdbicliques);
-                if (print) C->print();
-                delete C; 
-            } 
-            if (compBicl == nullptr and std_bicliques == nullptr) {
-                std::cout << "Compute AxA" << std::endl;
-                TIMERSTART(standard);
-                C = Lisa::matrix_multiplication_w(A, B, optimize);
-                TIMERSTOP(standard);
-                if (print) C->print();
-                delete C; 
-            }
-        } 
-
-        if (A != nullptr and B != nullptr) {
-            if (compBicl) { 
-                std::cout << "Compute AxB with compact struct" << std::endl;
-                TIMERSTART(compact_struct);
-                C = Lisa::matrix_multiplication_w(A, B, compBicl, optimize);
-                TIMERSTOP(compact_struct);
-                if (print) C->print();
-                delete C;
-            }
-            if (std_bicliques) {
-                std::cout << "Compute AxB with standard biclique representation" << std::endl;
-                TIMERSTART(stdbicliques);
-                C = Lisa::matrix_multiplication_w(A, B, std_bicliques, optimize);                 
-                TIMERSTOP(stdbicliques);
-                if (print) C->print();
-                delete C;
-            } 
-            if (not compBicl and not std_bicliques) {
-                std::cout << "Compute AxB" << std::endl;
-                TIMERSTART(standard);
-                C = Lisa::matrix_multiplication_w(A, B, optimize);
-                TIMERSTOP(standard);
-                if (print) C->print();
-                delete C;
-            }
-        }
-
-        delete A;
-        delete B;
-        if (std_bicliques) {
-            for (auto i : *std_bicliques) {
-                delete i;
-            }
-            delete std_bicliques;
-        }
-        if (compBicl) delete compBicl;
-    }
-    
     
     /*
 

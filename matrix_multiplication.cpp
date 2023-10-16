@@ -1,8 +1,8 @@
 #include "matrix_multiplication.hpp"
 
-namespace Lisa 
+namespace mw
 {
-    vector<Biclique*>* load_biclique_w(std::string path) 
+    vector<Biclique*>* load_biclique(std::string path) 
     {
         vector<Biclique*>* bicliques = new vector<Biclique*>();
         ifstream file; 
@@ -25,7 +25,7 @@ namespace Lisa
                 temp = new Biclique();
                 bicliques->push_back(temp);
                 for (size_t i = 1; i < components.size(); i++) {
-                    temp->S.push_back(atoi(components[i].c_str()));
+                    temp->S->push_back(atoi(components[i].c_str()));
                 }
                 continue;
             }
@@ -37,7 +37,7 @@ namespace Lisa
                     par.pop_back(); 
                     par.erase(par.begin());
                     auto split = splitString(par, ",");
-                    temp->C_w.push_back(make_pair(
+                    temp->C->push_back(make_pair(
                         atoi(split[0].c_str()),
                         atoi(split[1].c_str())
                     ));
@@ -49,28 +49,28 @@ namespace Lisa
         return bicliques;
     }
 
-    vector<Biclique*>* load_biclique_w_bin(std::string path) 
+    vector<Biclique*>* load_biclique_bin(std::string path) 
     {
         vector<Biclique*>* bicliques = new vector<Biclique*>();
         
         return bicliques;
     }
 
-    CompactBicliqueWeighted* load_CompactBiclique_w(std::string path) 
+    CompactBiclique* load_CompactBiclique(std::string path) 
     {
-        CompactBicliqueWeighted* compBicl = new CompactBicliqueWeighted();
+        CompactBiclique* compBicl = new CompactBiclique();
         assert(validateExtension(path, "txt"));
         ifstream file; 
         file.open(path);
         std::string line;
         getline(file,line);
-        auto w = splitString(line, " ");
-        for(size_t i = 1; i < w.size(); i++) {
-            compBicl->weights_values.insert(atoi(w.at(i).c_str()));
-        }
+        auto w = splitString(line, " "); // weights
+        //for(size_t i = 1; i < w.size(); i++) {
+        //    compBicl->weights_values.insert(atoi(w.at(i).c_str()));
+        //}
 
         while(getline(file, line) and line.front() != 'S') {
-            CompactBicliqueWeighted::C_values vec; 
+            auto vec = new C_Values(); 
             auto temp = splitString(line, " ");
             temp.erase(temp.begin()); //erase B[i];
 
@@ -78,9 +78,12 @@ namespace Lisa
                 auto sp = splitString(i, ",");
                 sp[0].erase(sp[0].begin());
                 sp[1].pop_back();
-                vec.push_back(make_pair(atoi(sp[0].c_str()), atoi(sp[1].c_str())));
+                vec->push_back(make_pair(atoi(sp[0].c_str()), atoi(sp[1].c_str())));
             };
-            compBicl->c_bicliques.push_back(vec);
+            compBicl->c_collection.push_back(vec);
+            auto bicl = new Biclique(); 
+            bicl->setC(vec); 
+            compBicl->biclique_collection.push_back(bicl); 
         }
 
         while (getline(file, line)) {
@@ -88,32 +91,71 @@ namespace Lisa
             if (spl.empty()) break;
             spl[0].pop_back();
             vector<uInt> vec; 
+            uInt index = atoi(spl[0].c_str()); 
             for (size_t j = 1; j < spl.size(); j++) {
-                vec.push_back(atoi(spl[j].c_str()));
+                uInt value = atoi(spl[j].c_str());
+                vec.push_back(value);
+                compBicl->biclique_collection.at(value)->S->push_back(index);
             }
-            compBicl->linked_s.push_back(make_pair(atoi(spl[0].c_str()), vec));
+            compBicl->linked_s.push_back(make_pair(index, vec));
         }
         return compBicl;
     }
 
-    CompactBicliqueWeighted* load_CompactBiclique_w_bin(std::string S_path, std::string SS_path, std::string C_path, std::string CC_path) 
+    CompactBiclique* load_CompactBiclique_bin(std::string path) 
     {
         ifstream S, SS, C, CC;
-        S.open(S_path, ios::in | ios::binary);
-        SS.open(SS_path, ios::in | ios::binary);
-        C.open(C_path, ios::in | ios::binary);
-        CC.open(CC_path, ios::in | ios::binary);
+        while(path.back() != '_'){
+            path.pop_back();
+        }
+        S.open(path + "S.bin", ios::in | ios::binary);
+        SS.open(path + "SS.bin", ios::in | ios::binary);
+        C.open(path + "C.bin", ios::in | ios::binary);
+        CC.open(path + "CC.bin", ios::in | ios::binary);
+
+        std::cout << "open file: " << path + "S.bin" << std::endl;
+        std::cout << "open file: " << path + "SS.bin" << std::endl;
+        std::cout << "open file: " << path + "C.bin" << std::endl;
+        std::cout << "open file: " << path + "CC.bin" << std::endl;
+
 
         assert(S.is_open());
         assert(SS.is_open());
         assert(C.is_open());
         assert(CC.is_open());
         
-        CompactBicliqueWeighted* compBicl = new CompactBicliqueWeighted();
+        CompactBiclique* compBicl = new CompactBiclique();
         typedef bool binVar;
         uInt* buffer = new uInt(0); 
         binVar* binBuffer = new binVar(0);
         uInt S_size = 0; 
+
+       
+
+        CC.read((char*)binBuffer, sizeof(binVar)); // 1
+        uInt C_size = 0;
+        while (not CC.eof()) {
+            CC.read((char*)binBuffer, sizeof(binVar)); // 1
+            if (*binBuffer == 1 or CC.eof()) {
+                //cout << C_size << endl;
+                auto vec = new C_Values(); 
+                auto bicl = new Biclique();
+                bicl->setC(vec); 
+                for (size_t i = 0; i < C_size; i++) {
+                    C.read((char*)buffer, sizeof(uInt));
+                    uInt first = *buffer;
+                    C.read((char*)buffer, sizeof(uInt));
+                    uInt second = *buffer;
+                    vec->push_back(make_pair(first,second));
+                }
+                compBicl->c_collection.push_back(vec);
+                compBicl->biclique_collection.push_back(bicl); 
+                C_size = 0;
+            }
+            else {
+                C_size++;
+            }
+        }
 
         SS.read((char*)binBuffer, sizeof(binVar)); // 1
         while (not SS.eof()) {
@@ -128,6 +170,8 @@ namespace Lisa
                         index = *buffer;
                     } else {
                         vec.push_back(*buffer);
+                        compBicl->biclique_collection.at(*buffer)->S->push_back(index);
+                        //if (debug) std::cout << "push in " << *buffer << ": " << index << endl;
                     }
                 }
                 compBicl->linked_s.push_back(make_pair(index, vec));
@@ -137,27 +181,6 @@ namespace Lisa
             }
         }
 
-        CC.read((char*)binBuffer, sizeof(binVar)); // 1
-        uInt C_size = 0;
-        while (not CC.eof()) {
-            CC.read((char*)binBuffer, sizeof(binVar)); // 1
-            if (*binBuffer == 1 or CC.eof()) {
-                //cout << C_size << endl;
-                CompactBicliqueWeighted::C_values vec; 
-                for (size_t i = 0; i < C_size; i++) {
-                    C.read((char*)buffer, sizeof(uInt));
-                    uInt first = *buffer;
-                    C.read((char*)buffer, sizeof(uInt));
-                    uInt second = *buffer;
-                    vec.push_back(make_pair(first,second));
-                }
-                compBicl->c_bicliques.push_back(vec);
-                C_size = 0;
-            }
-            else {
-                C_size++;
-            }
-        }
 
         S.close();
         SS.close();
@@ -167,48 +190,82 @@ namespace Lisa
         delete buffer;
         delete binBuffer;
 
+
+
+
         return compBicl;
+    }
+
+    GraphWeighted* transpose_CompactBiclique(CompactBiclique* compBicl)
+    {
+        if (compBicl == nullptr) return nullptr;  
+
+        auto transposed = new GraphWeighted(); 
+        transposed->transpose();
+
+        vector<Node*> temp; 
+
+        for (auto Si = compBicl->linked_s.begin(); Si != compBicl->linked_s.end(); Si++) {
+            for (auto Sij = (*Si).second.begin(); Sij != (*Si).second.end(); Sij++) {
+                for (auto k = compBicl->c_collection.at(*Sij)->begin(); k != compBicl->c_collection.at(*Sij)->end(); k++) {
+                    while(temp.size() <= (*k).first) {
+                        temp.push_back(new Node(temp.size(), true));
+                    }
+                    //cout << "add in: " << (*k).first << " = (" << (*Si).first << "," << (*k).second << ")" << endl;
+                    temp.at((*k).first)->addAdjacent((*Si).first, (*k).second); 
+                }
+            }
+        }
+
+        for (auto i : temp) {
+            if (i->edgesSize() > 0) {
+                transposed->insert(i); 
+            }
+            else {
+                delete i;
+            }
+        }
+
+        temp.clear(); 
+
+        return transposed;
     }
 
     void printBicliqueAsMatrix(Biclique* B)
     {
-        for (size_t i = 0; i < B->S.size(); i++) {
-            if(i < B->S.at(i) - 1) {
+        for (size_t i = 0; i < B->S->size(); i++) {
+            if(i < B->S->at(i) - 1) {
                 uInt temp = i; 
-                while(temp < B->S.at(i)) {
-                    cout << "Node " << temp << ": -" << endl;
+                while(temp < B->S->at(i)) {
+                    std::cout << "Node " << temp << ": -" << std::endl;
                     temp++; 
                 }
             }
-            cout << "Node " << B->S.at(i) << ": " ;
-            if (not B->C_w.empty()) {
-                for(size_t j = 0; j < B->C_w.size(); j++) {
-                    if (j < B->C_w.at(j).first ) {
+           std::cout << "Node " << B->S->at(i) << ": " ;
+            if (not B->C->empty()) {
+                for(size_t j = 0; j < B->C->size(); j++) {
+                    if (j < B->C->at(j).first ) {
                         uInt temp2 = j; 
-                        while(temp2 < B->C_w.at(j).first - 1) {
-                            cout << "0 ";
+                        while(temp2 < B->C->at(j).first - 1) {
+                            std::cout << "0 ";
                             temp2++; 
                         }
                     }
-                    cout << B->C_w.at(j).second  << " ";
+                    std::cout << B->C->at(j).second  << " ";
                 }
             }
-            cout << endl;   
+            std::cout << std::endl;   
         }
         return; 
     }
 
-    void printCompactStructure(CompactBicliqueWeighted* B)
+    void printCompactStructure(CompactBiclique* B)
     {
-        std::cout << "Weights: ";
-        for (auto i : B->weights_values) {
-            std::cout << i  << " ";
-        }
-        std::cout << endl; 
-        std::cout << "Bicliques" << endl;
-        for (size_t i = 0; i < B->c_bicliques.size(); i++) {
-            std::cout << "B[" << i << "]: ";
-            for (auto j : B->c_bicliques.at(i)) {
+        std::cout << std::endl; 
+        std::cout << "C collection" << std::endl;
+        for (size_t i = 0; i < (B->c_collection).size(); i++) {
+            std::cout << "C[" << i << "]: ";
+            for (auto j : *(B->c_collection).at(i)) {
                 std::cout << "(" << j.first << "," << j.second << ") "; 
             }
             std::cout << endl;
@@ -219,49 +276,48 @@ namespace Lisa
             for (auto j : i.second) {
                 std::cout << j << " ";
             }
-            std::cout << endl;
+            std::cout << std::endl;
         } 
+        std::cout << "Bicliques Collection " << std::endl; 
+        
+        uInt count = 0; 
+        for (auto i : B->biclique_collection) {
+            std::cout << "S[" << count << "]: ";
+            for (auto j : *(i->S)) {
+                std::cout << j << " " ; 
+            }
+            
+            std::cout << std::endl << "C[" << count << "]: ";
+            for (auto j : *(i->C)) {
+                std::cout << "(" << j.first << "," << j.second << ") " ; 
+            }
+            std::cout << std::endl;
+            count++;
+        }
+
+
         return; 
     }
 
-    GraphWeighted* matrix_multiplication_w(GraphWeighted* A, GraphWeighted* B, bool sw)
-    {
-        assert(A != nullptr and B != nullptr);
-        if (sw) {
-            return matrix_multiplication_w_transposed(A, B);
-        } else {
-            return matrix_multiplication_w(A,B);
-        }
-        return nullptr;
-    }
-
-    GraphWeighted* matrix_multiplication_w(GraphWeighted* A, GraphWeighted* B, std::vector<Biclique*>* bicliques, bool sw)
+    GraphWeighted* matrix_multiplication(GraphWeighted* A, GraphWeighted* B, std::vector<Biclique*>* bicliques) // (A'+B) x A = A^2 
     {
         assert(A != nullptr and B != nullptr and bicliques != nullptr);
         GraphWeighted* C = nullptr;
-        if (sw) {
-            C = matrix_multiplication_w_transposed(A, B); 
+        
+        C = matrix_multiplication(A, B); 
 
-        } else {
-            C = matrix_multiplication_w(A, B); //standard multiplication A\b x B    
-        }
         TIMERSTART(remplazing_std_bicl);
         assert(not bicliques->empty());
         for (auto X : *bicliques) {
-            assert(not X->S.empty());
-            assert(X->C.empty());
-            assert(not X->C_w.empty());
+            assert(not X->S->empty());
+            assert(not X->C->empty());
             std::vector<std::pair<uInt,uInt>>* vec = nullptr; 
             
-            TIMERSTART(compute);
-            if (sw) {
-                vec = vector_matrix_t_multiplication_w(X->C_w, B);
-            } else {
-                vec = vector_matrix_multiplication_w(X->C_w, B);
-            }   
-            TIMERSTOP(compute);
+            //TIMERSTART(compute);
+            vec = vector_matrix_multiplication(X->C, B);
+            //TIMERSTOP(compute);
 
-            for (auto i : X->S) {
+            for (auto i : *(X->S)) {
                 Node* node = C->find(i); 
                 if (node == nullptr) {
                     node = new Node(i, true); 
@@ -281,19 +337,20 @@ namespace Lisa
         return C;
     }
 
-    GraphWeighted* matrix_multiplication_w(GraphWeighted* A, GraphWeighted* B, CompactBicliqueWeighted* compBicl, bool sw) 
+    GraphWeighted* matrix_multiplication(GraphWeighted* A, GraphWeighted* B, CompactBiclique* compBicl) 
     {
         GraphWeighted* C = nullptr; 
         assert(A != nullptr and B != nullptr and compBicl != nullptr);
-        if (sw) {
-            C = matrix_multiplication_w_transposed(A, B);
-        } else {
-            C = matrix_multiplication_w(A, B);
-        }
+        
+        C = matrix_multiplication(A, B);
+        
         TIMERSTART(compute);
-        std::vector<std::vector<std::pair<uInt,uInt>>*>* res = compute_compact_struct_weight(compBicl, B, sw); 
+        std::vector<std::vector<std::pair<uInt,uInt>>*>* res = compute_compact_struct(compBicl, B); 
         TIMERSTOP(compute);
         TIMERSTART(remplazing_comp);
+        appendInGraph(res, compBicl, C);
+
+        /*
         for (auto i : compBicl->linked_s) {
             Node* node = C->find(i.first);
             if (node == nullptr) {
@@ -309,78 +366,40 @@ namespace Lisa
                 node->sort();
             }
         }
+
+        
         C->sort();
-        //for (auto i : *res) {
-        //    delete i;
-        //}
-        //delete res;
+        */
         TIMERSTOP(remplazing_comp);
         return C; 
     }
 
-
-    GraphWeighted* matrix_multiplication_w(GraphWeighted* A, GraphWeighted* B) 
+    GraphWeighted* matrix_pow(GraphWeighted* A, CompactBiclique* compBicl)
     {
-        if (B->isTransposed()) B->transpose();
-        vector<uInt> skip;  //se pueden omitir algunas columnas
-        #if defined(parallel)
-            omp_set_num_threads(8);
-        #endif
-        GraphWeighted* C = new GraphWeighted();
-        Node* temp = nullptr; 
-        //uint64_t jMax = B->maxValueEdge(); 
-        uint64_t jMax = A->maxValueEdge();
-        #if defined(parallel)
-            #pragma omp parallel for
-        #endif
-        for (size_t i = 0; i < A->size(); i++) {
-            Node* Ai = A->at(i);
-            temp = new Node(Ai->getId(), true);
-            C->insert(temp);
-            if(Ai->edgesSize() == 0) continue;
-            uInt index = 0; 
-            for(size_t j = 0; j <= jMax + 1; j++) {
-                if(not skip.empty() and j == skip[index]){
-                    index++;
-                    if(index >= skip.size()) index--;
-                }
-                uint64_t sum = 0; 
-                uint64_t count_zero = 0;
-                size_t k = 0;
-                for(auto Aik = Ai->wAdjacentsBegin(); Aik != Ai->wAdjacentsEnd(); Aik++) {
-                    for (; k < B->size(); k++) {
-                        //if(sw) break;
-                        Node* Bk = B->at(k);
-                        if(i == 0){
-                            auto Bkj_w = Bk->findAdjacentWeighted(j);
-                            if (Bkj_w == 0) {
-                                count_zero++;
-                            }
-                        }
-                        if (Bk->getId() == (*Aik).first) {
-                            auto Bkj_w = Bk->findAdjacentWeighted(j);
-                            if (Bkj_w > 0) {
-                                sum += (*Aik).second * Bkj_w; 
-                            } 
-                            break;
-                        }
-                    }
-                }
-                if(sum > 0) {
-                    temp->addAdjacent(j, sum);
-                }
-                
-                if(i == 0 && count_zero == B->size()){
-                    skip.push_back(j);
-                }
-                
-            }
-        }
-        return C;
-    }
+        //A->printAsMatrix();
+        std::cout << A->getPath() << std::endl;
+        auto B = new GraphWeighted(A->getPath());
+        B->transpose();
+        
+        //printCompactStructure(compBicl);
 
+        TIMERSTART(POW);
+        auto aa = matrix_multiplication(A, B); //AxA
+        delete B;
+        auto ba = compute_compact_struct(compBicl, A);
+        appendInGraph(ba, compBicl, aa);
+        compute_compact_struct(A, compBicl, aa);
+        biclique_pow(compBicl, aa);
+
+        std::cout << std::endl <<"pow: " << std::endl;
+        TIMERSTOP(POW);
+      
+        return aa;
+    }
     
-    GraphWeighted* matrix_multiplication_w_transposed(GraphWeighted* A, GraphWeighted* B) // row x row  multiplication
+  
+    
+    GraphWeighted* matrix_multiplication(GraphWeighted* A, GraphWeighted* B) // row x row  multiplication (B transposed)
     {
         #if defined(parallel)
             omp_set_num_threads(THREADS);
@@ -390,11 +409,15 @@ namespace Lisa
         GraphWeighted* C = new GraphWeighted();
         if (not B->isTransposed()) {
             B->transpose(); 
+            //std::cout << "Ok" << std::endl;
         }
 
         if (A->isTransposed()) {
             A->transpose(); 
+            //std::cout << "ok" << std::endl;
         }
+
+
         #if defined(parallel)
         std::mutex mtx;
         #pragma omp parallel for
@@ -404,10 +427,16 @@ namespace Lisa
             if (Ai->edgesSize() == 0) continue;
             Node* temp = new Node(Ai->getId(), true);
             //uint64_t jMax = Ai->getBackAdjacent();
-            //mtx.lock();
-            //cout << Ai->getId() << endl;
+
+            #if defined(parallel)
+            mtx.lock();
+            #endif
+
             C->insert(temp);
-            //mtx.unlock();
+
+            #if defined(parallel)
+            mtx.unlock();
+            #endif
             for (auto Bj = B->begin(); Bj != B->end(); Bj++){
                 if ((*Bj)->edgesSize() == 0) continue;
                 uInt sum = 0; 
@@ -416,8 +445,20 @@ namespace Lisa
                     while ((*adjB).first < (*adjA).first and adjB != (*Bj)->wAdjacentsEnd()) {
                         adjB++; 
                     }
+
+                    if (adjB == (*Bj)->wAdjacentsEnd()) break; 
+
                     if ((*adjA).first == (*adjB).first) {
+                        if(debug > 2){
+                            std::cout << "Node A" << Ai->getId() << std::endl; 
+                            std::cout << "Node B" << (*Bj)->getId() << std::endl;
+                            std::cout << "(*adjA).first:" << (*adjA).first << " && " << "(*adjB).first: " << (*adjB).first << std::endl;
+                            std::cout << "(*adjA).second:" << (*adjA).second << " && " << "(*adjB).sec: " << (*adjB).second << std::endl;
+                            std::cout << "sum prev: " << sum << endl;
+                        }
                         sum += (*adjA).second * (*adjB).second; 
+                        if (debug > 2) std::cout << "sum: " << sum << std::endl << std::endl;
+                        adjB++;
                     }  
                 }
 
@@ -431,33 +472,8 @@ namespace Lisa
         return C;
     }
 
-    vector<pair<uInt, uInt>>* vector_matrix_multiplication_w(vector<pair<uInt, uInt>> v, GraphWeighted *B)
-    {
-        if (B->isTransposed()) B->transpose();
-        vector<pair<uInt,uInt>>* res = new vector<pair<uInt,uInt>>();
-        //Graph* C = new Graph();
-        uint64_t jMax = B->maxValueEdge(); 
-        for(size_t j = 0; j <= jMax + 1; j++) {
-            uInt sum = 0;
-            for(auto vi = v.begin(); vi != v.end(); vi++) {
-                for (size_t k = 0; k < B->size(); k++) {
-                    auto Bk = B->at(k);
-                    if((*vi).first == Bk->getId()){
-                        auto Bk_w = Bk->findAdjacentWeighted(j);
-                        if (Bk_w > 0) {
-                            sum += (*vi).second * Bk_w; 
-                        } 
-                    }
-                }
-            }
-            if(sum > 0) {
-                res->push_back(make_pair(j, sum));
-            }
-        }
-        return res;
-    }
 
-    vector<pair<uInt, uInt>>* vector_matrix_t_multiplication_w(vector<pair<uInt, uInt>> v, GraphWeighted *B)
+    vector<pair<uInt, uInt>>* vector_matrix_multiplication(vector<pair<uInt, uInt>>* v, GraphWeighted *B)
     {
         if (not B->isTransposed()) B->transpose();
         vector<pair<uInt,uInt>>* res = new vector<pair<uInt,uInt>>();
@@ -466,7 +482,7 @@ namespace Lisa
             if ((*Bj)->edgesSize() == 0) continue;
             uInt sum = 0;
             auto adjB = (*Bj)->wAdjacentsBegin();  //adjB iterador de lista de adyacencia de la fila j-esima en B.
-            for (auto adjA = v.begin(); adjA != v.end(); adjA++) {
+            for (auto adjA = v->begin(); adjA != v->end(); adjA++) {
                 while ((*adjB).first < (*adjA).first and adjB != (*Bj)->wAdjacentsEnd()) {
                     adjB++; 
                 } 
@@ -481,147 +497,292 @@ namespace Lisa
         return res;
     }
 
-    std::vector<std::vector<std::pair<uInt,uInt>>*>* compute_compact_struct_weight(CompactBicliqueWeighted* compBicl, GraphWeighted* B, bool sw)
-    {
-        typedef std::vector<std::vector<std::pair<uInt,uInt>>*> resArray;
-        typedef std::vector<std::pair<uInt,uInt>>::iterator Iter;
 
-        auto res = new resArray(compBicl->c_bicliques.size(), new std::vector<std::pair<uInt,uInt>>);
-        
-        //if (sw) {
-            if (not B->isTransposed()) B->transpose();
-        
+    std::vector<std::vector<std::pair<uInt,uInt>>*>* compute_compact_struct(CompactBiclique* compBicl, GraphWeighted* B)
+    {
+        auto res = new resArray();
+        if (not B->isTransposed()) B->transpose();
+
+        for (size_t i = 0; i < compBicl->c_collection.size(); i++) {
+            auto r = new std::vector<std::pair<uInt,uInt>>();
+            res->push_back(r);
             for (auto Bj = B->begin(); Bj != B->end(); Bj++) {
                 if ((*Bj)->edgesSize() == 0) continue;
-                
-                std::vector<Iter> iterators;
-                std::vector<uInt> sums; 
-
                 auto adjB = (*Bj)->wAdjacentsBegin(); 
-
-                //TIMERSTART(prueba);
-                while (adjB != (*Bj)->wAdjacentsEnd()) {
-                    for (size_t i = 0; i < compBicl->c_bicliques.size(); i++) {
-                        if(adjB == (*Bj)->wAdjacentsBegin()) {
-                            iterators.push_back(compBicl->c_bicliques.at(i).begin());
-                            sums.push_back(0);
-                        }
-                        while( (*iterators.at(i)).first < (*adjB).first) {
-                            iterators[i]++;
-                        }
-                        if ((*iterators.at(i)).first == (*adjB).first) {
-                            sums[i] += (*iterators.at(i)).second * (*adjB).second; 
-
-                            if ((*adjB).first == (*Bj)->getBackAdjacent()) {
-                                res->at(i)->push_back(std::make_pair((*Bj)->getId(), sums[i]));
-                            }
-                        }
-
+                uInt sum = 0;
+                for (auto biclIt : *(compBicl->c_collection).at(i)) {
+                    while ((*adjB).first < (biclIt).first and (adjB != (*Bj)->wAdjacentsEnd())) {
+                        adjB++;
                     }
-                    adjB++;
-                }  
-            }
-        //}
-        return res;
-    }
 
-    /*
-     * No 
-     * Weighted
-    */
+                    if (adjB == (*Bj)->wAdjacentsEnd()) break; 
 
-    Graph* matrix_multiplication(Graph* A, Graph* B)
-    {
-        Graph* C = new Graph();
-        Node* temp = nullptr; 
-        uint64_t jMax = A->maxValueEdge(); 
-        for (size_t i = 0; i < A->size(); i++) {
-            Node* Ai = A->at(i);
-            temp = new Node(Ai->getId());
-            C->insert(temp);
-            for(size_t j = 0; j <= jMax + 1; j++) {
-                bool sw = false;
-                for(auto Aik = Ai->adjacentsBegin(); Aik != Ai->adjacentsEnd(); Aik++) {
-                    if(sw) break; 
-                    for (size_t k = 0; k < B->size(); k++) {
-                        if(sw) break;
-                        Node* Bk = B->at(k);
-                        if (Bk->getId() == *Aik) {
-                            //cout << "Node: " << temp->getId() << endl;
-                            //cout << "j: " << j << endl;
-                            //cout << "Aik: " << *Aik << endl;
-                            //cout << "Bk: " << Bk->getId() << endl;
-                            //cout << "Search: " << j << " in " << Bk->getId() << endl;  
-                            if(Bk->findAdjacent(j)) {
-                                temp->addAdjacent(j);
-                                //cout << "added" << endl;
-                                sw = true;
-                            }
+                    if (biclIt.first == (*adjB).first) {
+                        
+                        if (debug > 2){
+                            std::cout << "Bicl " << i << std::endl; 
+                            std::cout << "Node B" << (*Bj)->getId() << std::endl;
+                            std::cout << "(*adjA).first:" << (biclIt).first << " && " << "(*adjB).first: " << (*adjB).first << std::endl;
+                            std::cout << "(*adjA).second:" << (biclIt).second << " && " << "(*adjB).sec: " << (*adjB).second << std::endl;
+                            std::cout << "sum prev: " << sum << std::endl;
                         }
+
+                        sum += (biclIt).second * (*adjB).second; 
+
+                        if (debug > 2) std::cout << "sum: " << sum << std::endl << std::endl; 
                     }
+                    
+                }
+                if (sum > 0) {
+                    r->push_back(make_pair((*Bj)->getId(), sum));
                 }
             }
         }
-        return C;
-    }
-
-    Graph* matrix_multiplication(Graph* A, Graph* B, Biclique* X)
-    {
-        assert(not X->S.empty());
-        assert(not X->C.empty());
-        assert(X->C_w.empty());
-
-        auto C = matrix_multiplication(A, B); 
         
-        cout << "A-biclique x B: " << endl; 
-        C->printAsMatrix();
-
-        cout << endl << "vector x B " << endl; 
-        auto vec = vector_matrix_multiplication(X->C, B); 
-        for (auto i : *vec) {
-            cout << i << " " ;
-        }
-        cout << endl;
-
-        for (auto i : X->S) {
-            auto node = C->find(i); 
-
-            if (node == nullptr) {
-                node = new Node(i, true); 
-                C->insert(node);
-            }
-            for (auto j : *vec) {
-                node->addAdjacent(j);
-            }
-            node->sort();
-        }
-
-        cout << endl <<"C Matrix: " << endl; 
-        C->printAsMatrix();
-        return nullptr;
+        return res;
     }
 
-    std::vector<uInt>* vector_matrix_multiplication(std::vector<uInt> v, Graph* B)
+
+    GraphWeighted* compute_compact_struct(GraphWeighted* A, CompactBiclique* compBicl, GraphWeighted* res) 
     {
-        vector<uInt>* res = new vector<uInt>(); 
-        uint64_t jMax = v.back(); 
-        for (size_t j = 0; j <= jMax + 1; j++) {
-            bool sw = false; 
-            for (auto vk = v.begin(); vk != v.end(); vk++) {
-                if (sw) break;
-                for (size_t k = 0; k < B->size(); k++) {
-                    if (sw) break;
-                    auto Bk = B->at(k);
-                    if (Bk->getId() == *vk) {
-                        if (Bk->findAdjacent(j)) {
-                            res->push_back(j);
-                            sw = true; 
+        //auto res = new resArray();
+        if (A->isTransposed()) A->transpose();
+
+        typedef std::vector<std::pair<uInt,uInt>> transposedRow; 
+
+        if (res == nullptr) res = new GraphWeighted();
+    
+        uInt index = 0; 
+        for (auto i : compBicl->biclique_collection) {
+            std::vector<transposedRow> rows;  //same size as S 
+            for (auto Cij : *(i->C)) {
+                transposedRow row; 
+                for (auto Sik : *(i->S)) {
+                    row.push_back(make_pair(Sik, Cij.second));
+                }
+                rows.push_back(row);
+
+                if (debug) {
+                    std::cout << "C[" << index << "]t: ";
+                    for (auto k : row) {
+                        std::cout << " ("<< k.first << " " << k.second << ") ";
+                    }
+                    std::cout << std::endl;
+                }
+                index++;
+            }
+
+
+            for (auto Aj = A->begin(); Aj != A->end(); Aj++) {
+                if ((*Aj)->edgesSize() == 0) continue; 
+
+                for(size_t j = 0; j < rows.size(); j++) {
+                    auto aij = (*Aj)->wAdjacentsBegin();
+                    uInt sum = 0; 
+                    for (auto r : rows.at(j)) {
+                        while((*aij).first < r.first and aij != (*Aj)->wAdjacentsEnd()) {
+                            aij++;
+                        }
+                        if (aij == (*Aj)->wAdjacentsEnd()) break; 
+
+                        if (r.first == (*aij).first) {
+                            sum += r.second * (*aij).second;
                         }
                     }
-                }
+                    if (sum > 0) {
+                        auto node = res->find((*Aj)->getId()); 
+                        if (node == nullptr) {
+                            node = new Node((*Aj)->getId(), true);
+                            res->insert(node);
+                        }
+
+                        if (not node->increaseWeight(i->C->at(j).first, sum)) {
+                            node->addAdjacent(i->C->at(j).first, sum);
+                            node->sort();
+                        }
+                    }
+                }     
+                
             }
         }
-        return res;
-    }   
-}
+        return res; 
+    }
+    
 
+    void appendInGraph(std::vector<std::vector<std::pair<uInt,uInt>>*>* res, CompactBiclique* compBicl, GraphWeighted* graph)
+    {
+        for (auto i : compBicl->linked_s) {
+            Node* node = graph->find(i.first);
+            if (node == nullptr) {
+                node = new Node(i.first, true);
+                graph->insert(node);
+            }
+            for (auto j : i.second) {
+                for (auto k : *(res->at(j))) {
+                    if (not node->increaseWeight(k.first, k.second)) {
+                        node->addAdjacent(k.first, k.second);       
+                    }
+                }
+                node->sort();
+            }
+            //std::cout << "$$" << std::endl;
+            //graph->print();
+            //std::cout << "%%" <<std::endl;
+        }
+        graph->sort();
+
+        while (not res->empty()) {
+            delete res->back();
+            res->pop_back();
+        }
+        delete res; 
+    }   
+
+
+    void mergeGraph(GraphWeighted* A, GraphWeighted* B)
+    {
+        A->sort();
+        B->sort();
+
+        auto itA = A->begin();
+        auto itB = B->begin();
+
+        while (itA != A->end() and itB != B->end()) {
+            if ( (*itA)->getId() == (*itB)->getId()) {
+                for (auto adjB = (*itB)->wAdjacentsBegin(); adjB != (*itB)->wAdjacentsEnd(); adjB++) {
+                    if (not (*itA)->increaseWeight((*adjB).first, (*adjB).second)){
+                        (*itA)->addAdjacent((*adjB).first, (*adjB).second); 
+                    }
+                }
+                (*itA)->sort();
+                itB++;
+                itA++;
+            } else if ((*itB)->getId() < (*itA)->getId()) {
+                A->insert(*itB);
+                (*itB) = nullptr;
+                itB++;
+            } else {
+                itA++;
+            }
+        }
+        A->sort();
+        delete B; 
+        
+    }
+
+    GraphWeighted* biclique_pow(CompactBiclique* B, GraphWeighted* res)
+    {
+        if (res == nullptr) res = new GraphWeighted();
+
+        auto partialRes = new std::vector<std::vector<std::pair<uInt,uInt>>*>();
+
+        for (size_t i = 0; i < B->biclique_collection.size(); i++) {
+            for (size_t j = 0; j < B->biclique_collection.size(); j++) {
+                if(i==0) {
+                    partialRes->push_back(new std::vector<std::pair<uInt,uInt>>());
+                }
+                if (i != j) {
+                    auto intersection = checkIntersection(B->biclique_collection.at(j), B->biclique_collection.at(i)); 
+
+                    if (debug) {
+                        std::cout << "intersection: "; 
+                        for (auto k : *intersection) {
+                            std::cout << k.first << " "; 
+                        }
+                        std::cout << std::endl; 
+                    }
+
+                    if (intersection->size() > 0 ) {
+                        //auto vec = partialRes->back();
+                        
+                        //partialRes->push_back(vec);
+                        for (auto c : *(B->biclique_collection.at(i)->C)) {
+                            uInt value = 0;
+                            for (auto inter : *intersection)  {
+                                value += inter.second * c.second;   
+                            }
+                            //vec->push_back(make_pair(c.first, value)); 
+                            partialRes->at(j)->push_back(make_pair(c.first, value)); 
+                    }
+
+                        /* 
+                        for (auto nodeIndex : *(j->S)) {
+                            auto node = res->find(nodeIndex);
+                            bool created = false;
+                            if (node == nullptr) {
+                                if (debug) std::cout << "not find: " << nodeIndex << std::endl;
+                                created = true; 
+                                node = new Node(nodeIndex, true);
+                                res->insert(node); 
+                            }
+                            
+                            for (auto c : *(i->C)) {
+                                uInt value = 0;
+                                for (auto inter : *intersection)  {
+                                    value += inter.second * c.second;   
+                                }
+                                if (created) {
+                                    node->addAdjacent(c.first, value);
+                                } else {
+                                    if (not node->increaseWeight(c.first, value)){
+                                        node->addAdjacent(c.first, value);
+                                    }
+                                }
+                                
+                            }
+                            //node->print();
+                            node->sort();
+                        } */
+
+                
+                    }
+                    delete intersection; 
+                    res->sort();
+                }
+            }
+        } 
+
+
+        if (debug){
+            uInt counter = 0; 
+            for (auto i : *partialRes) {
+                std::cout << "R" << counter << ":" ;
+                for (auto j : *i) {
+                    std::cout << "(" << j.first << "," << j.second << ") " ;
+                }
+                std::cout << std::endl;
+                counter++;
+                
+        }
+        }
+        appendInGraph(partialRes,B,res);
+
+        return res; 
+    }
+
+
+    std::vector<std::pair<uInt, uInt>>* checkIntersection(Biclique* A, Biclique* B) 
+    {
+        auto it_S = A->S->begin();
+        auto it_C = B->C->begin(); 
+
+        auto intersection = new std::vector<std::pair<uInt, uInt>>();
+
+        if (A->S->back() <  A->C->front().first) {
+            return intersection;
+        }
+
+        while (it_S != A->S->end() and it_C != B->C->end()) {
+            if ( *it_S == (*it_C).first ) {
+                intersection->push_back((*it_C)); 
+                it_S++;
+                it_C++;
+            } else if ( *it_S < (*it_C).first ) {
+                it_S++; 
+            } else {
+                it_C++; 
+            }
+        }
+        return intersection; 
+    } 
+}

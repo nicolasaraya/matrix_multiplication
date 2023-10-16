@@ -24,10 +24,11 @@ HEADER	=       ../biclique_extraction/Graph/Graph.hpp \
 
 OUT	=           matrix_multiplicator
 CC	 =          g++
-FLAGS =         -c  -std=c++20 -DBITS32 -fopenmp
+FLAGS =         -c  -std=c++20 -DBITS32
 DEBUG_FLAGS =	-O0 -g -Wall
 OPT = 			-O3
-LFLAGS	=       -lm -lpthread -fopenmp
+LFLAGS	=       -lm
+PARALLEL_FLAGS = -lpthread -fopenmp -Dparallel
 #BOOST_FLAGS = -I ~/boost/boost_1_83_0/ -L ~/boost/stage/lib/ 
 				
 # Define una variable que se utilizará para pasar las banderas
@@ -35,10 +36,14 @@ LFLAGS	=       -lm -lpthread -fopenmp
 
 
 # Si la variable DEBUG está definida, agrega las DEBUG_FLAGS
-ifdef DEBUG
+ifdef debug
 FLAGS := $(FLAGS) $(DEBUG_FLAGS)
 else
 FLAGS += $(OPT) # Si no se define DEBUG, se agregan las banderas de optimización
+endif
+
+ifdef paralell
+FLAGS := $(FLAGS) $(PARALLEL_FLAGS)
 endif
 
 all: $(OBJS)
