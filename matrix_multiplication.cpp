@@ -442,21 +442,21 @@ namespace mw
                 uInt sum = 0; 
                 auto adjB = (*Bj)->wAdjacentsBegin(); 
                 for (auto adjA = Ai->wAdjacentsBegin(); adjA != Ai->wAdjacentsEnd(); adjA++) {
-                    while ((*adjB).first < (*adjA).first and adjB != (*Bj)->wAdjacentsEnd()) {
+                    while (adjB != (*Bj)->wAdjacentsEnd() and (*adjB)->first < (*adjA)->first) {
                         adjB++; 
                     }
 
                     if (adjB == (*Bj)->wAdjacentsEnd()) break; 
 
-                    if ((*adjA).first == (*adjB).first) {
+                    if ((*adjA)->first == (*adjB)->first) {
                         if(debug > 2){
                             std::cout << "Node A" << Ai->getId() << std::endl; 
                             std::cout << "Node B" << (*Bj)->getId() << std::endl;
-                            std::cout << "(*adjA).first:" << (*adjA).first << " && " << "(*adjB).first: " << (*adjB).first << std::endl;
-                            std::cout << "(*adjA).second:" << (*adjA).second << " && " << "(*adjB).sec: " << (*adjB).second << std::endl;
+                            std::cout << "(*adjA).first:" << (*adjA)->first << " && " << "(*adjB).first: " << (*adjB)->first << std::endl;
+                            std::cout << "(*adjA).second:" << (*adjA)->second << " && " << "(*adjB).sec: " << (*adjB)->second << std::endl;
                             std::cout << "sum prev: " << sum << endl;
                         }
-                        sum += (*adjA).second * (*adjB).second; 
+                        sum += (*adjA)->second * (*adjB)->second; 
                         if (debug > 2) std::cout << "sum: " << sum << std::endl << std::endl;
                         adjB++;
                     }  
@@ -483,11 +483,11 @@ namespace mw
             uInt sum = 0;
             auto adjB = (*Bj)->wAdjacentsBegin();  //adjB iterador de lista de adyacencia de la fila j-esima en B.
             for (auto adjA = v->begin(); adjA != v->end(); adjA++) {
-                while ((*adjB).first < (*adjA).first and adjB != (*Bj)->wAdjacentsEnd()) {
+                while ((*adjB)->first < (*adjA).first and adjB != (*Bj)->wAdjacentsEnd()) {
                     adjB++; 
                 } 
-                if ((*adjA).first == (*adjB).first) {
-                    sum += (*adjA).second * (*adjB).second; 
+                if ((*adjA).first == (*adjB)->first) {
+                    sum += (*adjA).second * (*adjB)->second; 
                 }  
             }
             if (sum > 0) {
@@ -511,23 +511,23 @@ namespace mw
                 auto adjB = (*Bj)->wAdjacentsBegin(); 
                 uInt sum = 0;
                 for (auto biclIt : *(compBicl->c_collection).at(i)) {
-                    while ((*adjB).first < (biclIt).first and (adjB != (*Bj)->wAdjacentsEnd())) {
+                    while ((adjB != (*Bj)->wAdjacentsEnd()) and (*adjB)->first < (biclIt).first) {
                         adjB++;
                     }
 
                     if (adjB == (*Bj)->wAdjacentsEnd()) break; 
 
-                    if (biclIt.first == (*adjB).first) {
+                    if (biclIt.first == (*adjB)->first) {
                         
                         if (debug > 2){
                             std::cout << "Bicl " << i << std::endl; 
                             std::cout << "Node B" << (*Bj)->getId() << std::endl;
-                            std::cout << "(*adjA).first:" << (biclIt).first << " && " << "(*adjB).first: " << (*adjB).first << std::endl;
-                            std::cout << "(*adjA).second:" << (biclIt).second << " && " << "(*adjB).sec: " << (*adjB).second << std::endl;
+                            std::cout << "(*adjA).first:" << (biclIt).first << " && " << "(*adjB).first: " << (*adjB)->first << std::endl;
+                            std::cout << "(*adjA).second:" << (biclIt).second << " && " << "(*adjB).sec: " << (*adjB)->second << std::endl;
                             std::cout << "sum prev: " << sum << std::endl;
                         }
 
-                        sum += (biclIt).second * (*adjB).second; 
+                        sum += (biclIt).second * (*adjB)->second; 
 
                         if (debug > 2) std::cout << "sum: " << sum << std::endl << std::endl; 
                     }
@@ -580,13 +580,13 @@ namespace mw
                     auto aij = (*Aj)->wAdjacentsBegin();
                     uInt sum = 0; 
                     for (auto r : rows.at(j)) {
-                        while((*aij).first < r.first and aij != (*Aj)->wAdjacentsEnd()) {
+                        while(aij != (*Aj)->wAdjacentsEnd() and (*aij)->first < r.first ) {
                             aij++;
                         }
                         if (aij == (*Aj)->wAdjacentsEnd()) break; 
 
-                        if (r.first == (*aij).first) {
-                            sum += r.second * (*aij).second;
+                        if (r.first == (*aij)->first) {
+                            sum += r.second * (*aij)->second;
                         }
                     }
                     if (sum > 0) {
@@ -650,8 +650,8 @@ namespace mw
         while (itA != A->end() and itB != B->end()) {
             if ( (*itA)->getId() == (*itB)->getId()) {
                 for (auto adjB = (*itB)->wAdjacentsBegin(); adjB != (*itB)->wAdjacentsEnd(); adjB++) {
-                    if (not (*itA)->increaseWeight((*adjB).first, (*adjB).second)){
-                        (*itA)->addAdjacent((*adjB).first, (*adjB).second); 
+                    if (not (*itA)->increaseWeight((*adjB)->first, (*adjB)->second)){
+                        (*itA)->addAdjacent((*adjB)->first, (*adjB)->second); 
                     }
                 }
                 (*itA)->sort();
