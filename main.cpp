@@ -55,16 +55,21 @@ int main(int argc, char const *argv[])
         }
         if (compact != nullptr) {
             std::cout << "*** Pow with compact bicliques***" << std::endl;
+
+            TIMERSTART(POW_COMPACT_BICLIQUES);
             C = matrix_pow(A, compact);
+            TIMERSTOP(POW_COMPACT_BICLIQUES);
         }
         else {
-            std::cout << "*** Pow std ***" << std::endl;
+            std::cout << "*** Pow default ***" << std::endl;
             std::cout << arguments["graph"] << std::endl;
             
             B = new GraphWeighted(arguments["graph"]);
             //B->print();
             B->transpose();
+            TIMERSTART(POW_DEFAULT);
             C = matrix_multiplication(A,B);
+            TIMERSTOP(POW_DEFAULT);
         }
     } else if (strcmp(arguments["mode"].c_str(), modes[0].c_str()) == 0) {
         assert(arguments["graphB"].size() > 0); 

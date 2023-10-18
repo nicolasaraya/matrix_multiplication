@@ -383,17 +383,22 @@ namespace mw
         
         //printCompactStructure(compBicl);
 
-        TIMERSTART(POW);
+        TIMERSTART(AXA);
         auto aa = matrix_multiplication(A, B); //AxA
+        //auto aa = new GraphWeighted();
+        TIMERSTOP(AXA);
         delete B;
+        TIMERSTART(BXA);
         auto ba = compute_compact_struct(compBicl, A);
         appendInGraph(ba, compBicl, aa);
+        TIMERSTOP(BXA);
+        TIMERSTART(AXB);
         compute_compact_struct(A, compBicl, aa);
+        TIMERSTOP(AXB);
+        TIMERSTART(BXB);
         biclique_pow(compBicl, aa);
+        TIMERSTOP(BXB);
 
-        std::cout << std::endl <<"pow: " << std::endl;
-        TIMERSTOP(POW);
-      
         return aa;
     }
     
@@ -675,10 +680,10 @@ namespace mw
         if (res == nullptr) res = new GraphWeighted();
 
         auto partialRes = new std::vector<std::vector<std::pair<uInt,uInt>>*>();
-
+        TIMERSTART(COMPUTE_BXB);
         for (size_t i = 0; i < B->biclique_collection.size(); i++) {
             for (size_t j = 0; j < B->biclique_collection.size(); j++) {
-                if(i==0) {
+                if (i==0) {
                     partialRes->push_back(new std::vector<std::pair<uInt,uInt>>());
                 }
                 if (i != j) {
@@ -703,45 +708,14 @@ namespace mw
                             }
                             //vec->push_back(make_pair(c.first, value)); 
                             partialRes->at(j)->push_back(make_pair(c.first, value)); 
-                    }
-
-                        /* 
-                        for (auto nodeIndex : *(j->S)) {
-                            auto node = res->find(nodeIndex);
-                            bool created = false;
-                            if (node == nullptr) {
-                                if (debug) std::cout << "not find: " << nodeIndex << std::endl;
-                                created = true; 
-                                node = new Node(nodeIndex, true);
-                                res->insert(node); 
-                            }
-                            
-                            for (auto c : *(i->C)) {
-                                uInt value = 0;
-                                for (auto inter : *intersection)  {
-                                    value += inter.second * c.second;   
-                                }
-                                if (created) {
-                                    node->addAdjacent(c.first, value);
-                                } else {
-                                    if (not node->increaseWeight(c.first, value)){
-                                        node->addAdjacent(c.first, value);
-                                    }
-                                }
-                                
-                            }
-                            //node->print();
-                            node->sort();
-                        } */
-
+                        }
                 
                     }
                     delete intersection; 
-                    res->sort();
                 }
             }
         } 
-
+        TIMERSTOP(COMPUTE_BXB);
 
         if (debug){
             uInt counter = 0; 
@@ -753,9 +727,11 @@ namespace mw
                 std::cout << std::endl;
                 counter++;
                 
+            }
         }
-        }
+        TIMERSTART(APPEND_BXB);
         appendInGraph(partialRes,B,res);
+        TIMERSTOP(APPEND_BXB);
 
         return res; 
     }
