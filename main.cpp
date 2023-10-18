@@ -59,7 +59,11 @@ int main(int argc, char const *argv[])
         }
         else {
             std::cout << "*** Pow std ***" << std::endl;
+            std::cout << arguments["graph"] << std::endl;
+            
             B = new GraphWeighted(arguments["graph"]);
+            //B->print();
+            B->transpose();
             C = matrix_multiplication(A,B);
         }
     } else if (strcmp(arguments["mode"].c_str(), modes[0].c_str()) == 0) {
