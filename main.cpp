@@ -14,15 +14,14 @@ int main(int argc, char const *argv[])
         {"compact", ""},
         {"biclique", ""}, 
         {"print", "0"},
-        {"buildFile", "0"}, 
-        {"mode", "pow"}
-        };
+        {"save", "0"}, 
+        {"mode", "pow"}};
 
     auto arguments = parseArguments(argc, argv, &input_arguments);
     bool bin = false;
 
     std::cout << "**** Params ****" << std::endl; 
-    for(auto i : arguments) {
+    for (auto i : arguments) {
         std::cout << i.first << ": " << i.second << std::endl;
     }
     std::cout << "****************" << std::endl;
@@ -33,10 +32,13 @@ int main(int argc, char const *argv[])
 
     assert(arguments["graph"].size() > 0);
     
-    if(arguments["graph"].find(".bin") != std::string::npos) {
+    if (arguments["graph"].find(".bin") != std::string::npos) {
             bin = true; 
     } else if (arguments["graph"].find(".txt") != std::string::npos) {
             bin = false;
+    } else {
+        std::cout << "Format graph incompatible" << std::endl;
+        return 0; 
     }
 
     GraphWeighted* A = nullptr; 
@@ -44,7 +46,7 @@ int main(int argc, char const *argv[])
     GraphWeighted* C = nullptr; 
     CompactBiclique* compact = nullptr;
 
-    if (strcmp(arguments["mode"].c_str(), modes[0].c_str()) == 0) {
+    if (strcmp(arguments["mode"].c_str(), modes[0].c_str()) == 0) { //pow
         A = new GraphWeighted(arguments["graph"]); 
         if (arguments["compact"].size() > 0)  {
             if (bin) {
@@ -62,20 +64,32 @@ int main(int argc, char const *argv[])
         }
         else {
             std::cout << "*** Pow default ***" << std::endl;
-            std::cout << arguments["graph"] << std::endl;
-            
             B = new GraphWeighted(arguments["graph"]);
-            //B->print();
             B->transpose();
+
             TIMERSTART(POW_DEFAULT);
             C = matrix_multiplication(A,B);
             TIMERSTOP(POW_DEFAULT);
         }
-    } else if (strcmp(arguments["mode"].c_str(), modes[0].c_str()) == 0) {
+    } else if (strcmp(arguments["mode"].c_str(), modes[1].c_str()) == 0) { //multiplication
         assert(arguments["graphB"].size() > 0); 
+        std::cout << "Matrix AxB Multiplication" << std::endl;
     }
 
     if (arguments["print"] == "1") C->print();
+
+    if (arguments["save"].size() >= 1) {
+        if(atoi(arguments["save"].c_str()) == 1) {
+            C->setPath("C_matrix.ext");
+        } else {
+            C->setPath(arguments["save"]);
+        }
+        if (bin) {
+            C->writeBinaryFile();
+        } else {
+            C->writeAdjacencyList();
+        }
+    }
 
     if (A != nullptr) delete A;
     if (B != nullptr) delete B;
