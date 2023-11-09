@@ -14,10 +14,23 @@
 #include <cassert>
 
 //#define parallel
+#ifndef sdsl_f
+//#define sdsl_f
+#endif
 
-#if defined(parallel)
+#ifdef parallel
     #define THREADS 4
 #endif
+
+#ifdef sdsl_f
+    #include <sdsl/int_vector.hpp>
+    #include <sdsl/bit_vectors.hpp>
+    #include <sdsl/util.hpp>
+    #include <sdsl/rank_support.hpp>
+    #include <sdsl/select_support.hpp>
+    #include <sdsl/suffix_arrays.hpp>
+    #include "sdsl_compressor/sdsl_compressor.hpp"
+#endif 
 
 #define debug 0
 
@@ -115,6 +128,10 @@ namespace mw
 
     typedef std::vector<std::vector<std::pair<uInt,uInt>>*> resArray;
     typedef std::vector<std::pair<uInt,uInt>>::iterator Iter;
+
+    #ifdef sdsl_f
+        CompactBiclique* load_CompactBiclique_sdsl(std::string);
+    #endif
 
     // A x A = (A)^2 
     // A = A' + b

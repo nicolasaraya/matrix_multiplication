@@ -1,6 +1,6 @@
 #include "boost_multiplication.hpp"
 
-namespace boost {
+namespace boost_mult {
     void fillZero (ublas::matrix<uInt>* matrix) 
     {
         for (size_t i = 0; i < matrix->size1(); i++) {
@@ -82,7 +82,47 @@ namespace boost {
             }
             if (i == (*itNode)->getId()) {
                 for(auto j = (*itNode)->wAdjacentsBegin(); j != (*itNode)->wAdjacentsEnd(); j++) {
-                    matrix.insert_element(i, (*j).first, (*j).second);
+                    matrix.insert_element(i, (*j)->first, (*j)->second);
+                }
+                itNode++;
+            }
+        }
+        delete temp;
+
+        return matrix; 
+    }
+
+     ublas::compressed_matrix<uInt> createMatrixSparse(std::string path) 
+    {
+        auto temp = new GraphWeighted(path);
+
+        size_t maxRow = temp->back()->getId() + 1;
+        size_t maxCol = temp->maxValueEdge() + 1;
+
+        std::cout << "maxRow: " << maxRow << std::endl;
+        std::cout << "maxCol: " << maxCol << std::endl;
+
+        if(maxRow > maxCol) { 
+            maxCol = maxRow;
+        } else {
+            maxRow = maxCol;
+        }
+
+        //temp->print();
+
+        //auto matrix = new ublas::matrix<uInt>(maxRow + 2, maxCol + 2);
+        ublas::compressed_matrix<uInt> matrix(maxRow, maxCol);
+        std::cout << matrix.size1() << " " << matrix.size2() << std::endl;
+
+        auto itNode = temp->begin(); 
+
+        for (size_t i = 0; i < maxRow; i++) {
+            for(size_t j = 0; j < maxCol; j++) {
+                matrix.insert_element(i, j, 0);
+            }
+            if (i == (*itNode)->getId()) {
+                for(auto j = (*itNode)->wAdjacentsBegin(); j != (*itNode)->wAdjacentsEnd(); j++) {
+                    matrix.insert_element(i, (*j)->first, (*j)->second);
                 }
                 itNode++;
             }

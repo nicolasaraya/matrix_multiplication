@@ -58,8 +58,11 @@ namespace mw
 
     CompactBiclique* load_CompactBiclique(std::string path) 
     {
+        if (not validateExtension(path, "txt")) {
+            return nullptr;
+        }
+
         CompactBiclique* compBicl = new CompactBiclique();
-        assert(validateExtension(path, "txt"));
         ifstream file; 
         file.open(path);
         std::string line;
@@ -104,6 +107,9 @@ namespace mw
 
     CompactBiclique* load_CompactBiclique_bin(std::string path) 
     {
+        if (not validateExtension(path, "bin")) {
+            return nullptr;
+        }
         ifstream S, SS, C, CC;
         while(path.back() != '_'){
             path.pop_back();
@@ -156,7 +162,7 @@ namespace mw
                 C_size++;
             }
         }
-
+        
         SS.read((char*)binBuffer, sizeof(binVar)); // 1
         while (not SS.eof()) {
             SS.read((char*)binBuffer, sizeof(binVar));
@@ -168,7 +174,9 @@ namespace mw
                     S.read((char*)buffer, sizeof(uInt));
                     if (i == 0) {
                         index = *buffer;
+                        cout << endl<< "size: " << S_size  <<", index: " << index << ": "; 
                     } else {
+                        cout << *buffer << " ";
                         vec.push_back(*buffer);
                         compBicl->biclique_collection.at(*buffer)->S->push_back(index);
                         //if (debug) std::cout << "push in " << *buffer << ": " << index << endl;
@@ -427,25 +435,46 @@ namespace mw
         std::mutex mtx;
         #pragma omp parallel for
         #endif
-        for (size_t i = 0; i < A->size(); i++) {
-            Node* Ai = A->at(i);
-            if (Ai->edgesSize() == 0) continue;
-            Node* temp = new Node(Ai->getId(), true);
+
+        for (auto Ai = A->begin(); Ai != A->end(); Ai++) {
+            // if ((*Ai)->edgesSize() == 0) continue;
+            Node* temp = new Node((*Ai)->getId(), true);
             //uint64_t jMax = Ai->getBackAdjacent();
 
             #if defined(parallel)
             mtx.lock();
             #endif
-
             C->insert(temp);
-
             #if defined(parallel)
             mtx.unlock();
             #endif
+
+            auto adjA_begin = (*Ai)->wAdjacentsBegin();
+            auto adjA_end = (*Ai)->wAdjacentsEnd();
+
             for (auto Bj = B->begin(); Bj != B->end(); Bj++){
-                if ((*Bj)->edgesSize() == 0) continue;
+                //if ((*Bj)->edgesSize() == 0) continue;
                 uInt sum = 0; 
                 auto adjB = (*Bj)->wAdjacentsBegin(); 
+                auto adjB_end = (*Bj)->wAdjacentsEnd();
+                auto adjA = adjA_begin;
+
+                while (adjA != adjA_end and adjB != adjB_end) {
+                    if ((*adjA).first == (*adjB).first) {
+                        sum += (*adjA).second * (*adjB).second; 
+                        if (debug > 2) std::cout << "sum: " << sum << std::endl << std::endl;
+                        adjA++;
+                        adjB++;
+                    } else if ((*adjA).first < (*adjB).first) {
+                        adjA++; 
+                    } else {
+                        adjB++;
+                    }
+
+                }
+
+
+                /*
                 for (auto adjA = Ai->wAdjacentsBegin(); adjA != Ai->wAdjacentsEnd(); adjA++) {
                     while (adjB != (*Bj)->wAdjacentsEnd() and (*adjB)->first < (*adjA)->first) {
                         adjB++; 
@@ -466,14 +495,14 @@ namespace mw
                         adjB++;
                     }  
                 }
-
+                */
                 if (sum > 0) {
                     temp->addAdjacent((*Bj)->getId(), sum);
                 }
             }
             //temp->print();
         }
-        C->sort();
+        //C->sort();
         return C;
     }
 
@@ -488,11 +517,11 @@ namespace mw
             uInt sum = 0;
             auto adjB = (*Bj)->wAdjacentsBegin();  //adjB iterador de lista de adyacencia de la fila j-esima en B.
             for (auto adjA = v->begin(); adjA != v->end(); adjA++) {
-                while ((*adjB)->first < (*adjA).first and adjB != (*Bj)->wAdjacentsEnd()) {
+                while ((*adjB).first < (*adjA).first and adjB != (*Bj)->wAdjacentsEnd()) {
                     adjB++; 
                 } 
-                if ((*adjA).first == (*adjB)->first) {
-                    sum += (*adjA).second * (*adjB)->second; 
+                if ((*adjA).first == (*adjB).first) {
+                    sum += (*adjA).second * (*adjB).second; 
                 }  
             }
             if (sum > 0) {
@@ -516,23 +545,23 @@ namespace mw
                 auto adjB = (*Bj)->wAdjacentsBegin(); 
                 uInt sum = 0;
                 for (auto biclIt : *(compBicl->c_collection).at(i)) {
-                    while ((adjB != (*Bj)->wAdjacentsEnd()) and (*adjB)->first < (biclIt).first) {
+                    while ((adjB != (*Bj)->wAdjacentsEnd()) and (*adjB).first < (biclIt).first) {
                         adjB++;
                     }
 
                     if (adjB == (*Bj)->wAdjacentsEnd()) break; 
 
-                    if (biclIt.first == (*adjB)->first) {
+                    if (biclIt.first == (*adjB).first) {
                         
                         if (debug > 2){
                             std::cout << "Bicl " << i << std::endl; 
                             std::cout << "Node B" << (*Bj)->getId() << std::endl;
-                            std::cout << "(*adjA).first:" << (biclIt).first << " && " << "(*adjB).first: " << (*adjB)->first << std::endl;
-                            std::cout << "(*adjA).second:" << (biclIt).second << " && " << "(*adjB).sec: " << (*adjB)->second << std::endl;
+                            std::cout << "(*adjA).first:" << (biclIt).first << " && " << "(*adjB).first: " << (*adjB).first << std::endl;
+                            std::cout << "(*adjA).second:" << (biclIt).second << " && " << "(*adjB).sec: " << (*adjB).second << std::endl;
                             std::cout << "sum prev: " << sum << std::endl;
                         }
 
-                        sum += (biclIt).second * (*adjB)->second; 
+                        sum += (biclIt).second * (*adjB).second; 
 
                         if (debug > 2) std::cout << "sum: " << sum << std::endl << std::endl; 
                     }
@@ -585,13 +614,13 @@ namespace mw
                     auto aij = (*Aj)->wAdjacentsBegin();
                     uInt sum = 0; 
                     for (auto r : rows.at(j)) {
-                        while(aij != (*Aj)->wAdjacentsEnd() and (*aij)->first < r.first ) {
+                        while(aij != (*Aj)->wAdjacentsEnd() and (*aij).first < r.first ) {
                             aij++;
                         }
                         if (aij == (*Aj)->wAdjacentsEnd()) break; 
 
-                        if (r.first == (*aij)->first) {
-                            sum += r.second * (*aij)->second;
+                        if (r.first == (*aij).first) {
+                            sum += r.second * (*aij).second;
                         }
                     }
                     if (sum > 0) {
@@ -655,8 +684,8 @@ namespace mw
         while (itA != A->end() and itB != B->end()) {
             if ( (*itA)->getId() == (*itB)->getId()) {
                 for (auto adjB = (*itB)->wAdjacentsBegin(); adjB != (*itB)->wAdjacentsEnd(); adjB++) {
-                    if (not (*itA)->increaseWeight((*adjB)->first, (*adjB)->second)){
-                        (*itA)->addAdjacent((*adjB)->first, (*adjB)->second); 
+                    if (not (*itA)->increaseWeight((*adjB).first, (*adjB).second)){
+                        (*itA)->addAdjacent((*adjB).first, (*adjB).second); 
                     }
                 }
                 (*itA)->sort();
@@ -760,5 +789,88 @@ namespace mw
             }
         }
         return intersection; 
-    } 
+    }
+    #ifdef sdsl_f
+    CompactBiclique *load_CompactBiclique_sdsl(std::string path)
+    {
+        if (not validateExtension(path, "sdsl")) {
+            return nullptr;
+        }
+        auto compBicl = new CompactBiclique();
+        while(path.back() != '_'){
+            path.pop_back();
+        }
+
+        sdsl::wm_int<sdsl::rrr_vector<15>> c_sdsl = w_sdsl::readCompressedInt(path + "C.sdsl");
+        sdsl::rrr_vector<15> cc_sdsl = w_sdsl::readCompressedBitmap(path + "CC-rrr-64.sdsl");
+        sdsl::wm_int<sdsl::rrr_vector<15>> s_sdsl = w_sdsl::readCompressedInt(path + "S.sdsl");
+        sdsl::rrr_vector<15> ss_sdsl = w_sdsl::readCompressedBitmap(path + "SS-rrr-64.sdsl");
+
+        sdsl::rrr_vector<15>::select_1_type cc_select(&cc_sdsl);
+        sdsl::rrr_vector<15>::select_1_type ss_select(&ss_sdsl);
+
+        sdsl::rrr_vector<15>::rank_1_type cc_rank(&cc_sdsl);
+        sdsl::rrr_vector<15>::rank_1_type ss_rank(&ss_sdsl);
+
+        uInt cc_size = cc_rank.size();
+        //std::cout << "cc_size " << cc_size << std::endl;
+        uInt total_rank = cc_rank.rank(cc_size);
+        //std::cout << "total rank" << total_rank << std::endl;
+
+
+        uInt start = 0; 
+        uInt size = 0;
+        uInt end = 0; 
+
+        for (size_t i = 1; i <= total_rank; i++) {
+            if (i != total_rank) {
+                size = cc_select(i+1) - cc_select(i) - 1 ;
+                end = start + (size*2); 
+            } else {
+                end = c_sdsl.size();
+            }
+            
+            auto vec = new C_Values();
+            auto bicl = new Biclique();
+            bicl->setC(vec);
+
+            for (size_t j = start; j < end; j+=2) {
+                vec->push_back(make_pair(c_sdsl[j], c_sdsl[j+1]));
+            }
+
+            compBicl->c_collection.push_back(vec);
+            compBicl->biclique_collection.push_back(bicl);
+            start = end; 
+        }
+
+        uInt ss_size = ss_rank.size();
+        //std::cout << "ss_size " << ss_size << std::endl;
+        total_rank = ss_rank.rank(ss_size);
+        //std::cout << "total rank" << total_rank << std::endl;
+
+        start = 0;
+        end = 0;
+
+        for (size_t i = 1; i <= total_rank; i++) {
+            if (i != total_rank) { 
+                end = ss_select(i+1); 
+            } else {
+                end = s_sdsl.size();
+
+            }
+            vector<uInt> vec;
+            uInt index = s_sdsl[start];
+            //std::cout << "index: " << index << std::endl; 
+            for(size_t j = start + 1; j < end; j++) {
+                //std::cout << s_sdsl[j] << " " ; 
+                vec.push_back(s_sdsl[j]);
+                compBicl->biclique_collection.at(s_sdsl[j])->S->push_back(index);
+            }
+            compBicl->linked_s.push_back(make_pair(index, vec));
+            start = end; 
+            //std::cout << std::endl << "****" << std::endl;
+        }
+        return compBicl;
+    }
+    #endif
 }

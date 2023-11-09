@@ -1,0 +1,1 @@
+g++ *.cpp *.hpp ../../biclique_extraction/Utils/Utils.cpp -lsdsl -ldivsufsort -ldivsufsort64 -g -O0

@@ -14,7 +14,7 @@ int main(int argc, char const *argv[])
         {"compact", ""},
         {"biclique", ""}, 
         {"print", "0"},
-        {"save", "0"}, 
+        {"save", ""}, 
         {"mode", "pow"}};
 
     auto arguments = parseArguments(argc, argv, &input_arguments);
@@ -49,15 +49,18 @@ int main(int argc, char const *argv[])
     if (strcmp(arguments["mode"].c_str(), modes[0].c_str()) == 0) { //pow
         A = new GraphWeighted(arguments["graph"]); 
         if (arguments["compact"].size() > 0)  {
-            if (bin) {
+            #ifdef sdsl_f
+            compact = load_CompactBiclique_sdsl(arguments["compact"]);
+            #endif
+            if (compact == nullptr) {
                 compact = load_CompactBiclique_bin(arguments["compact"]);
-            } else {
+            } 
+            if (compact == nullptr) {
                 compact = load_CompactBiclique(arguments["compact"]);
             }
         }
         if (compact != nullptr) {
             std::cout << "*** Pow with compact bicliques***" << std::endl;
-
             TIMERSTART(POW_COMPACT_BICLIQUES);
             C = matrix_pow(A, compact);
             TIMERSTOP(POW_COMPACT_BICLIQUES);

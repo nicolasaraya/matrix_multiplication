@@ -25,12 +25,11 @@ FLAGS =         -c  -std=c++20 -DBITS32
 DEBUG_FLAGS =	-O0 -g -Wall
 OPT = 			-O3
 LFLAGS	=       -lm
-PARALLEL_FLAGS = -lpthread -fopenmp -Dparallel
-#BOOST_FLAGS = -I ~/boost/boost_1_83_0/ -L ~/boost/stage/lib/ 
-				
-# Define una variable que se utilizará para pasar las banderas
-# de compilación al objetivo "all" y sus dependencias
+PARALLEL_FLAGS = -lpthread -fopenmp -Dparallel                                                                                                                                      
 
+#SDSL_PATH = 
+#BOOST_PATH = -I ~/boost/boost_1_83_0/ -L ~/boost/stage/lib/ 
+				
 
 # Si la variable DEBUG está definida, agrega las DEBUG_FLAGS
 ifdef debug
@@ -41,6 +40,14 @@ endif
 
 ifdef paralell
 FLAGS := $(FLAGS) $(PARALLEL_FLAGS)
+endif
+
+ifdef sdsl
+OBJS := $(OBJS) sdsl_compressor.o
+SOURCE := $(SOURCE) sdsl_compressor/sdsl_compressor.cpp
+HEADER := $(HEADER) sdsl_compressor/sdsl_compressor.hpp
+FLAGS := $(FLAGS) -Dsdsl_f
+LFLAGS := $(LFLAGS) -lsdsl -ldivsufsort -ldivsufsort64 
 endif
 
 all: $(OBJS)
@@ -64,6 +71,8 @@ Node.o: ../biclique_extraction/Graph/Node.cpp
 Utils.o: ../biclique_extraction/Utils/Utils.cpp
 	$(CC) $(FLAGS) ../biclique_extraction/Utils/Utils.cpp 
 
-clean:
-	rm -f $(OBJS) $(OBJS_CHECKER) $(OUT) $(OUT_CHECKER)
+sdsl_compressor.o: sdsl_compressor/sdsl_compressor.cpp
+	$(CC) $(FLAGS) sdsl_compressor/sdsl_compressor.cpp 
 
+clean:
+	rm -f $(OBJS) $(OBJS_CHECKER) $(OUT) $(OUT_CHECKER) sdsl_compressor.o
