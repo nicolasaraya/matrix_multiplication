@@ -174,9 +174,9 @@ namespace mw
                     S.read((char*)buffer, sizeof(uInt));
                     if (i == 0) {
                         index = *buffer;
-                        cout << endl<< "size: " << S_size  <<", index: " << index << ": "; 
+                        //cout << endl<< "size: " << S_size  <<", index: " << index << ": "; 
                     } else {
-                        cout << *buffer << " ";
+                        //cout << *buffer << " ";
                         vec.push_back(*buffer);
                         compBicl->biclique_collection.at(*buffer)->S->push_back(index);
                         //if (debug) std::cout << "push in " << *buffer << ": " << index << endl;

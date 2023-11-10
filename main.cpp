@@ -48,6 +48,7 @@ int main(int argc, char const *argv[])
 
     if (strcmp(arguments["mode"].c_str(), modes[0].c_str()) == 0) { //pow
         A = new GraphWeighted(arguments["graph"]); 
+        std::cout << "edges in graph: " << A->all_edges_size() << std::endl;
         if (arguments["compact"].size() > 0)  {
             #ifdef sdsl_f
             compact = load_CompactBiclique_sdsl(arguments["compact"]);
@@ -58,6 +59,7 @@ int main(int argc, char const *argv[])
             if (compact == nullptr) {
                 compact = load_CompactBiclique(arguments["compact"]);
             }
+            std::cout << "edges in compact biclique: " << compact->getSize() << std::endl;
         }
         if (compact != nullptr) {
             std::cout << "*** Pow with compact bicliques***" << std::endl;

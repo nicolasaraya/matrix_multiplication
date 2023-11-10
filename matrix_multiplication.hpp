@@ -90,6 +90,15 @@ namespace mw
             biclique_collection.clear();
             linked_s.clear();
         }  
+
+        uint64_t getSize() 
+        {
+            uint64_t sum = 0;
+            for (auto i : biclique_collection) {
+                sum += i->C->size() * i->S->size();
+            }
+            return sum;
+        }
     };
 
     std::vector<Biclique*>* load_biclique(std::string);
