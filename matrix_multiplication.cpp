@@ -773,6 +773,10 @@ namespace mw
 
         auto intersection = new std::vector<std::pair<uInt, uInt>>();
 
+        if (A->S->empty() or B->C->empty()) {
+            return intersection;
+        }
+
         if (A->S->back() <  A->C->front().first) {
             return intersection;
         }
