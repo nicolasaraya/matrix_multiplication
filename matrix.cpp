@@ -127,7 +127,7 @@ csc_matrix *Matrix::make_csc()
                 if (csr->col_ind[j] > min) {
                     if (csr->col_ind[j] < new_min) {
                         new_min = csr->col_ind[j];
-                        std::cout << "new_min: " << new_min << std::endl;
+                        //std::cout << "new_min: " << new_min << std::endl;
                     }
                     break;
                 }
@@ -138,7 +138,7 @@ csc_matrix *Matrix::make_csc()
             csc->col_ptr.push_back(csc->row_ind.size());
         }
         csc->col_id.push_back(min);
-        std::cout << "new it" << std::endl;
+        //std::cout << "new it" << std::endl;
         if(min == new_min) {
             new_min++;
         }
