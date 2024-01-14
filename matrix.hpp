@@ -7,6 +7,8 @@
 #include <cassert>
 #include <fstream>
 
+#include <utils.hpp>
+
 
 struct csr_matrix 
 {
@@ -74,6 +76,7 @@ class Matrix {
         Matrix();
         Matrix(std::string path, bool b_csr, bool b_csc);
         void setFile(std::string path); 
+        csr_matrix* make_csr_bin();
         csr_matrix* make_csr();
         csc_matrix* make_csc();
         csr_matrix* get_csr();
@@ -82,12 +85,13 @@ class Matrix {
         void set_csc(csc_matrix* mat);
         void delete_csr();
         void delete_csc();
+        void saveBin();
+        void saveTxt();
     private:
         std::string path = "";
         csr_matrix* csr = nullptr;
         csc_matrix* csc = nullptr; 
 };
 
-std::vector<std::string> splitString(std::string line, std::string delims);
 
 #endif

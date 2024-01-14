@@ -5,7 +5,13 @@ Matrix::Matrix(){}
 Matrix::Matrix(std::string path, bool b_csr, bool b_csc)
 {
     setFile(path);
-    if (b_csr) make_csr();
+    if (b_csr) {
+        if(path.find(".txt" ) != std::string::npos) {
+            make_csr();
+	    } else if(path.find(".bin") != std::string::npos) {
+		    make_csr_bin();
+	    }
+    }
     if (b_csc) make_csc();
 }
 
@@ -20,11 +26,10 @@ csr_matrix* Matrix::make_csr()
     std::ifstream file;
     file.open(path);
     assert(file.is_open());
-
-	while (not file.eof()) {
-		std::string s;
-        getline(file, s);
-        auto values = splitString(s, " ");
+    std::string s;
+	while (getline(file, s)) {
+        std::cout << s << std::endl;
+        auto values = utils::splitString(s, " ");
 
         csr->values.push_back(atoi(values[2].c_str()));
         csr->col_ind.push_back(atoi(values[1].c_str()));
@@ -37,6 +42,39 @@ csr_matrix* Matrix::make_csr()
 	}
 	
 	file.close();
+
+    return csr;
+}
+
+csr_matrix* Matrix::make_csr_bin()
+{
+    csr = new csr_matrix();
+
+    std::ifstream file;
+	file.open(path, std::ios::in | std::ios::binary);
+	file.seekg (0, file.beg);
+	assert(file.is_open());
+
+	int32_t* buffer = new int32_t(-1);
+
+	while (not file.eof()) {
+		file.read((char*)buffer, sizeof(int32_t));
+		if(*buffer < 0) {
+			csr->row_id.push_back(-(*buffer));
+            csr->row_ptr.push_back(csr->col_ind.size());
+		} else {
+			//if(file.eof()) break;
+			uint32_t adj = *buffer;
+			file.read((char*)buffer, sizeof(uint32_t));
+			uint32_t weight = *buffer;
+            csr->col_ind.push_back(adj),
+            csr->values.push_back(weight);
+		}
+		//temp->print();
+		//if (matrix->size() > 400000 ) break;
+	}
+	delete buffer;
+	file.close();;
 
     return csr;
 }
@@ -127,19 +165,22 @@ void Matrix::delete_csc()
     csc = nullptr;
 }
 
-std::vector<std::string> splitString(std::string line, std::string delims)
+void Matrix::saveTxt()
 {
-    std::string::size_type bi, ei;
-    std::vector<std::string> words;
-    bi = line.find_first_not_of(delims);
-    while (bi != std::string::npos)
-    {
-        ei = line.find_first_of(delims, bi);
-        if (ei == std::string::npos)
-            ei = line.length();
-        std::string aux = line.substr(bi, ei - bi);
-        words.push_back(aux.c_str());
-        bi = line.find_first_not_of(delims, ei);
+    std::ofstream file;
+	std::string pathFile = utils::modify_path(path, 4 ,utils::now_time()+".txt");
+
+	file.open(pathFile, std::ofstream::out | std::ofstream::trunc); 
+	assert(file.is_open());
+
+    for (size_t i = 0; i < csr->row_id.size(); i++) {
+        size_t start = csr->row_ptr[i];
+        size_t stop; 
+        if (i == csr->row_id.size()-1) stop = csr->col_ind.size();
+        else stop = csr->row_ptr[i+1];
+
+        for (size_t j = start; j < stop; j++) {
+            file << csr->row_id[i] << " " << csr->col_ind[j] << " " << csr->values[j] << std::endl;
+        }
     }
-    return words;
 }

@@ -1,13 +1,16 @@
 OBJS	=   	main.o \
 				matrix.o \
 				multiplicator.o \
+				utils.o \
 
 SOURCE	=       main.cpp \
 				matrix.cpp \
 				multiplicator.cpp \
+				utils.cpp \
 
 HEADER	=       matrix.hpp \
 				multiplicator.hpp \
+				utils.hpp \
 
 OUT	=           matrix_multiplicator
 CC	 =          g++
@@ -36,6 +39,9 @@ matrix.o: matrix.cpp
 
 multiplicator.o: multiplicator.cpp
 	$(CC) $(FLAGS) multiplicator.cpp
+
+utils.o: utils.cpp
+	$(CC) $(FLAGS) utils.cpp
 
 clean:
 	rm -f $(OBJS) $(OBJS_CHECKER) $(OUT)

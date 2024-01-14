@@ -13,8 +13,8 @@ Matrix* mat_pow(Matrix *A)
 
 
     for (auto i : inters) {
-        std::cout << "index: (" << i.index_col << "," << i.index_row<< ")" << std::endl;
-        std::cout << "col id, row id: (" << csc->col_id[i.index_col] << "," << csr->row_id[i.index_row] << ")" << std::endl;
+        //std::cout << "index: (" << i.index_col << "," << i.index_row<< ")" << std::endl;
+        //std::cout << "col id, row id: (" << csc->col_id[i.index_col] << "," << csr->row_id[i.index_row] << ")" << std::endl;
         Hr.push(i);
     }
 
@@ -23,7 +23,7 @@ Matrix* mat_pow(Matrix *A)
         auto elem = Hr.top();
         Hr.pop();
         Hc.push(elem);
-        std::cout << elem.index_col << " " << elem.index_row << " | " << elem.start_col << " " << elem.end_col << " | " << elem.start_row << " " << elem.end_row << " | " << elem.value_col << " " << elem.value_row << std::endl;
+        //std::cout << elem.index_col << " " << elem.index_row << " | " << elem.start_col << " " << elem.end_col << " | " << elem.start_row << " " << elem.end_row << " | " << elem.value_col << " " << elem.value_row << std::endl;
                 
         if (Hr.empty() or (Hr.top().value_col != elem.value_col)) { //primer elemento de la columna es distinto
             uint32_t sum = 0;

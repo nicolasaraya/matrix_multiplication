@@ -37,9 +37,10 @@ int main(int argc, char const *argv[])
     std::cout << std::endl << std::endl;
     */
 
+    /*
     Matrix m("test.txt", true, false);
     auto csr2 = m.get_csr();
-    std::cout << "CSR 2:" << std::endl;
+    std::cout << "CSR 2:" << std::endl;../datasets/100_dblp/100_dblp_w.txt
     csr2->print();
 
     std::cout << std::endl;
@@ -49,6 +50,18 @@ int main(int argc, char const *argv[])
 
     auto res = mat_pow(&m);
     res->get_csr()->print();
+    */
+
+    if(argc == 2) {
+        Matrix m(argv[1], true, true);
+        m.get_csr()->print();
+        TIMERSTART(TIME_POW);
+        auto res = mat_pow(&m);
+        TIMERSTOP(TIME_POW);
+        m.saveTxt();
+        //res->get_csr()->print();
+        delete res; 
+    }
 
     return 0;
 }
