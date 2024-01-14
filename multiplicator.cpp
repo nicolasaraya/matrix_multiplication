@@ -14,6 +14,7 @@ Matrix* mat_pow(Matrix *A)
 
     for (auto i : inters) {
         //std::cout << "index: (" << i.index_col << "," << i.index_row<< ")" << std::endl;
+        //std::cout << i.index_col << " " << i.index_row << " | " << i.start_col << " " << i.end_col << " | " << i.start_row << " " << i.end_row << " | " << i.value_col << " " << i.value_row << std::endl;
         //std::cout << "col id, row id: (" << csc->col_id[i.index_col] << "," << csr->row_id[i.index_row] << ")" << std::endl;
         Hr.push(i);
     }
@@ -33,7 +34,7 @@ Matrix* mat_pow(Matrix *A)
                 //std::cout << "inter:" << inter.index_col << " " << inter.index_row << " | " << inter.start_col << " " << inter.end_col << " | " << inter.start_row << " " << inter.end_row << " | " << inter.value_col << " " << inter.value_row << std::endl;
                 sum += csc->values[inter.start_col] * csr->values[inter.start_row];
 
-                if (Hc.empty() or inter.value_row != Hc.top().value_row) {
+                if (Hc.empty() or inter.value_row != Hc.top().value_row) { // si queda vacio o si el siguiente valor es distinto, push en csr
                     csr_res->values.push_back(sum);
                     csr_res->col_ind.push_back(csr->col_ind[inter.start_row]);
 
@@ -86,10 +87,10 @@ std::vector<Intersection> get_intersections(Matrix* A, Matrix* B)
             if (i == csc->col_id.size() - 1) end_col = csc->col_id.size();
             else end_col = csc->col_ptr[i+1];
 
-            uint32_t start_row = csr->row_ptr[i];
+            uint32_t start_row = csr->row_ptr[j];
             uint32_t end_row;
-            if (i == csr->row_id.size() - 1) end_row = csr->col_ind.size();
-            else end_row = csr->row_ptr[i+1];
+            if (j == csr->row_id.size() - 1) end_row = csr->col_ind.size();
+            else end_row = csr->row_ptr[j+1];
 
             inters.push_back(Intersection(i,j, start_col, end_col, start_row, end_row, csc->row_ind[start_col], csr->col_ind[start_row]));
             i++;

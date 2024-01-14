@@ -28,7 +28,7 @@ csr_matrix* Matrix::make_csr()
     assert(file.is_open());
     std::string s;
 	while (getline(file, s)) {
-        std::cout << s << std::endl;
+        //std::cout << s << std::endl;
         auto values = utils::splitString(s, " ");
 
         csr->values.push_back(atoi(values[2].c_str()));
