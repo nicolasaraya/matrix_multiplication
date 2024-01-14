@@ -53,13 +53,18 @@ int main(int argc, char const *argv[])
     */
 
     if(argc == 2) {
+        TIMERSTART(BUILD);
         Matrix m(argv[1], true, true);
+        TIMERSTOP(BUILD);
         m.get_csr()->print();
+        m.get_csc()->print();
+
         TIMERSTART(TIME_POW);
         auto res = mat_pow(&m);
         TIMERSTOP(TIME_POW);
-        m.saveTxt();
-        //res->get_csr()->print();
+
+        res->saveTxt();
+        res->get_csr()->print();
         delete res; 
     }
 

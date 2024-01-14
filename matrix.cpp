@@ -22,6 +22,7 @@ void Matrix::setFile(std::string path)
 
 csr_matrix* Matrix::make_csr()
 {
+    TIMERSTART(BUILD_CSR);
     csr = new csr_matrix();
     std::ifstream file;
     file.open(path);
@@ -42,7 +43,7 @@ csr_matrix* Matrix::make_csr()
 	}
 	
 	file.close();
-
+    TIMERSTOP(BUILD_CSR);
     return csr;
 }
 
@@ -81,6 +82,7 @@ csr_matrix* Matrix::make_csr_bin()
 
 csc_matrix *Matrix::make_csc()
 {
+    TIMERSTART(BUILD_CSC);
     csc = new csc_matrix();
     csc->col_ptr.push_back(0);
     bool flag = false;
@@ -101,7 +103,51 @@ csc_matrix *Matrix::make_csc()
         }
     }
 
+    //int it = 0;
     while (min <= max) {
+        uint32_t new_min = max;
+        for (size_t i = 0; i < csr->row_ptr.size(); i++) {
+            size_t start = csr->row_ptr[i];
+            size_t finish;
+
+            if (i == csr->row_ptr.size()-1) finish = csr->col_ind.size();
+            else finish = csr->row_ptr[i+1]; 
+
+            //std::cout << "s: " << start << " , f:" << finish << std::endl;
+
+            for (size_t j = start; j < finish; j++) {
+                //std::cout << "val:" << csr->col_ind[j] << std::endl;
+
+                if (csr->col_ind[j] == min) {
+                    csc->row_ind.push_back(csr->row_id[i]);
+                    csc->values.push_back(csr->values[j]);
+                    //break;
+                }
+
+                if (csr->col_ind[j] > min) {
+                    if (csr->col_ind[j] < new_min) {
+                        new_min = csr->col_ind[j];
+                        std::cout << "new_min: " << new_min << std::endl;
+                    }
+                    break;
+                }
+                
+            }    
+        }
+        if (min != max) {
+            csc->col_ptr.push_back(csc->row_ind.size());
+        }
+        csc->col_id.push_back(min);
+        std::cout << "new it" << std::endl;
+        if(min == new_min) {
+            new_min++;
+        }
+        min = new_min;
+        //if (it++ > 10) break;
+    }
+
+    /*
+     while (min <= max) {
         for (size_t i = 0; i < csr->row_ptr.size(); i++) {
 
             size_t start = csr->row_ptr[i];
@@ -126,8 +172,10 @@ csc_matrix *Matrix::make_csc()
 
         min++;
     }
+    */
 
     if (flag) delete csr; 
+    TIMERSTOP(BUILD_CSC);
     return csc;
 }
 
