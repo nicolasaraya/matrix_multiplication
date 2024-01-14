@@ -1,8 +1,0 @@
-./csr_multiplicator ../../datasets/cnr/cnr-2000-hc_weighted.bin
-file: ../../datasets/cnr/cnr-2000-hc_weighted.bin
-# elapsed time (build_matrix): 0.209004s
-# elapsed time (build_matrix): 0.187613s
-# elapsed time (BUILD_A): 0.156432s
-# elapsed time (BUILD_AT): 0.189093s
-sizeof: 4
-# elapsed time (multiplication_csr): 8598.61s
