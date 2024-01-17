@@ -41,6 +41,8 @@ csr_matrix* Matrix::make_csr()
         }
 
 	}
+    csr->row_ptr.push_back(csr->col_ind.size());
+
 	
 	file.close();
     TIMERSTOP(BUILD_CSR);
@@ -80,101 +82,59 @@ csr_matrix* Matrix::make_csr_bin()
     return csr;
 }
 
-csc_matrix *Matrix::make_csc()
+csc_matrix* Matrix::make_csc()
 {
-    TIMERSTART(BUILD_CSC);
-    csc = new csc_matrix();
-    csc->col_ptr.push_back(0);
+    
     bool flag = false;
     if (csr == nullptr) {
         flag = true;
         csr = make_csr();
     }
 
-    uint32_t max = csr->col_ind.front();
-    uint32_t min = csr->col_ind.front();
+    TIMERSTART(BUILD_CSC);
 
-    for (auto i : csr->col_ind) {
-        if (i > max) {
-            max = i;
-        }
-        if (i < min) {
-            min = i;
+    csc = new csc_matrix();
+    csc->col_ptr.push_back(0);
+    csc->row_ind.resize(csr->values.size(), 0);
+    csc->values.resize(csr->values.size(), 0);
+    
+    std::vector<uint32_t> cols(csr->col_ind.size(), 0); 
+
+    for (size_t i = 0; i < csr->col_ind.size(); i++) {
+        cols[csr->col_ind[i]]++; 
+    }
+
+    for (size_t i = 0; i < cols.size(); i++) {
+        if (cols[i] > 0) {
+            csc->col_id.push_back(i);
+            uint32_t temp = csc->col_ptr.back();
+            csc->col_ptr.push_back(csc->col_ptr.back() + cols[i]);
+            cols[i] = temp;
         }
     }
 
-    //int it = 0;
-    while (min <= max) {
-        uint32_t new_min = max;
-        for (size_t i = 0; i < csr->row_ptr.size(); i++) {
-            size_t start = csr->row_ptr[i];
-            size_t finish;
 
-            if (i == csr->row_ptr.size()-1) finish = csr->col_ind.size();
-            else finish = csr->row_ptr[i+1]; 
-
-            //std::cout << "s: " << start << " , f:" << finish << std::endl;
-
-            for (size_t j = start; j < finish; j++) {
-                //std::cout << "val:" << csr->col_ind[j] << std::endl;
-
-                if (csr->col_ind[j] == min) {
-                    csc->row_ind.push_back(csr->row_id[i]);
-                    csc->values.push_back(csr->values[j]);
-                    //break;
-                }
-
-                if (csr->col_ind[j] > min) {
-                    if (csr->col_ind[j] < new_min) {
-                        new_min = csr->col_ind[j];
-                        //std::cout << "new_min: " << new_min << std::endl;
-                    }
-                    break;
-                }
-                
-            }    
+    for (size_t i = 0; i < csr->row_id.size(); i++) {
+        size_t start = csr->row_ptr[i];
+        size_t stop; 
+        if (i == csr->row_id.size() - 1) {
+            stop = csr->values.size();
+        } else {
+            stop = csr->row_ptr[i+1];
         }
-        if (min != max) {
-            csc->col_ptr.push_back(csc->row_ind.size());
+
+        for (size_t j = start; j < stop; j++) {
+            csc->row_ind[cols[csr->col_ind[j]]] = csr->row_id[i];
+            csc->values[cols[csr->col_ind[j]]] = csr->values[j];
+            cols[csr->col_ind[j]]++;
         }
-        csc->col_id.push_back(min);
-        //std::cout << "new it" << std::endl;
-        if(min == new_min) {
-            new_min++;
-        }
-        min = new_min;
-        //if (it++ > 10) break;
     }
 
-    /*
-     while (min <= max) {
-        for (size_t i = 0; i < csr->row_ptr.size(); i++) {
+    cols.clear();
 
-            size_t start = csr->row_ptr[i];
-            size_t finish;
-
-            if (i == csr->row_ptr.size()-1) finish = csr->col_ind.size();
-            else finish = csr->row_ptr[i+1]; 
-
-            //std::cout << "s: " << start << " , f:" << finish << std::endl;
-
-            for (size_t j = start; j < finish; j++) {
-                if (csr->col_ind[j] == min) {
-                    csc->row_ind.push_back(csr->row_id[i]);
-                    csc->values.push_back(csr->values[j]);
-                }
-            }    
-        }
-        if (min != max) {
-            csc->col_ptr.push_back(csc->row_ind.size());
-        }
-        csc->col_id.push_back(min);
-
-        min++;
+    if (flag) {
+        delete csr; 
     }
-    */
-
-    if (flag) delete csr; 
     TIMERSTOP(BUILD_CSC);
     return csc;
 }
@@ -215,20 +175,108 @@ void Matrix::delete_csc()
 
 void Matrix::saveTxt()
 {
+    std::string pathFile = utils::modify_path(path, 4 ,utils::now_time() + ".txt");
+    saveTxt(pathFile);
+}
+
+void Matrix::saveTxt(std::string pathFile) {
     std::ofstream file;
-	std::string pathFile = utils::modify_path(path, 4 ,utils::now_time()+".txt");
 
 	file.open(pathFile, std::ofstream::out | std::ofstream::trunc); 
 	assert(file.is_open());
 
+
     for (size_t i = 0; i < csr->row_id.size(); i++) {
         size_t start = csr->row_ptr[i];
-        size_t stop; 
-        if (i == csr->row_id.size()-1) stop = csr->col_ind.size();
-        else stop = csr->row_ptr[i+1];
+        size_t stop = csr->row_ptr[i+1];
 
         for (size_t j = start; j < stop; j++) {
             file << csr->row_id[i] << " " << csr->col_ind[j] << " " << csr->values[j] << std::endl;
         }
     }
+    
 }
+
+
+
+    /*
+    //v2
+    csc = new csc_matrix();
+    csc->col_ptr.push_back(0);
+
+
+    std::set<uint32_t> cols;
+
+    for (auto i : csr->col_ind) {
+        cols.insert(i);
+    }
+
+    std::vector<uint32_t> starts = csr->row_ptr;
+
+    //int it = 0;
+    for (auto col_val : cols) {
+        for (size_t i = 0; i < csr->row_ptr.size(); i++) {
+
+            size_t start = starts[i];
+            size_t finish;
+
+            if (i == csr->row_ptr.size()-1) finish = csr->col_ind.size();
+            else finish = csr->row_ptr[i+1]; 
+
+            //std::cout << "s: " << start << " , f:" << finish << std::endl;
+
+            for (size_t j = start; j < finish; j++) {
+                //std::cout << "val:" << csr->col_ind[j] << std::endl;
+
+                if (csr->col_ind[j] == col_val) {
+                    csc->row_ind.push_back(csr->row_id[i]);
+                    csc->values.push_back(csr->values[j]);
+                    
+                    //break;
+                }
+
+                if (csr->col_ind[j] > col_val) {
+                    break;
+                }
+                starts[i] = j;
+                
+                
+            }    
+        }
+        if (col_val != *(cols.end())) {
+            csc->col_ptr.push_back(csc->row_ind.size());
+        }
+        csc->col_id.push_back(col_val);
+        //std::cout << "new it" << std::endl;
+        //if (it++ > 10) break;
+    }
+    */
+
+    /*
+    //v1
+    while (min <= max) {
+        for (size_t i = 0; i < csr->row_ptr.size(); i++) {
+
+            size_t start = csr->row_ptr[i];
+            size_t finish;
+
+            if (i == csr->row_ptr.size()-1) finish = csr->col_ind.size();
+            else finish = csr->row_ptr[i+1]; 
+
+            //std::cout << "s: " << start << " , f:" << finish << std::endl;
+
+            for (size_t j = start; j < finish; j++) {
+                if (csr->col_ind[j] == min) {
+                    csc->row_ind.push_back(csr->row_id[i]);
+                    csc->values.push_back(csr->values[j]);
+                }
+            }    
+        }
+        if (min != max) {
+            csc->col_ptr.push_back(csc->row_ind.size());
+        }
+        csc->col_id.push_back(min);
+
+        min++;
+    }
+    */

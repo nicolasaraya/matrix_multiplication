@@ -9,7 +9,8 @@
 #include <queue>
 
 
-struct Intersection{
+struct Intersection
+{
     uint32_t index_col;
     uint32_t index_row;
     uint32_t start_col;
@@ -32,14 +33,16 @@ struct Intersection{
                                                                                                         value_row(value_row) {}
 
     // Definir el operador de comparación para la cola de prioridad
-    struct Col_Comp {
+    struct Col_Comp 
+    {
         bool operator()(const Intersection& a, const Intersection& b) const {
             return a.value_col > b.value_col;
         }
     };
 
     // Definir el operador de comparación para la segunda cola
-    struct Row_Comp {
+    struct Row_Comp 
+    {
         bool operator()(const Intersection& a, const Intersection& b) const {
             return a.value_row > b.value_row;
         }
@@ -47,6 +50,7 @@ struct Intersection{
 };
 
 
+Matrix* mat_mult(Matrix* A, Matrix* B);
 Matrix* mat_pow(Matrix* A);
 
 std::vector<Intersection> get_intersections(Matrix* A, Matrix* B);

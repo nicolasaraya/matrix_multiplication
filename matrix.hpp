@@ -6,6 +6,7 @@
 #include <vector>
 #include <cassert>
 #include <fstream>
+#include <set>
 
 #include <utils.hpp>
 
@@ -85,8 +86,9 @@ class Matrix {
         void set_csc(csc_matrix* mat);
         void delete_csr();
         void delete_csc();
-        void saveBin();
         void saveTxt();
+        void saveTxt(std::string path);
+        void saveBin();
     private:
         std::string path = "";
         csr_matrix* csr = nullptr;

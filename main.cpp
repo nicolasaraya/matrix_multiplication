@@ -52,19 +52,19 @@ int main(int argc, char const *argv[])
     res->get_csr()->print();
     */
 
-    if(argc == 2) {
+    if (argc == 2) {
         TIMERSTART(BUILD);
         Matrix m(argv[1], true, true);
         TIMERSTOP(BUILD);
-        m.get_csr()->print();
-        m.get_csc()->print();
+        //m.get_csr()->print();
+        //m.get_csc()->print();
 
         TIMERSTART(TIME_POW);
         auto res = mat_pow(&m);
         TIMERSTOP(TIME_POW);
 
-        res->saveTxt();
-        res->get_csr()->print();
+        res->saveTxt("res.txt");
+        //res->get_csr()->print();
         delete res; 
     }
 

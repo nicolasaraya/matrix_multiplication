@@ -6,7 +6,7 @@ namespace utils
     {
         std::time_t t = std::time(0); // get time now
         std::tm *t_now = std::localtime(&t);
-        std::string now = std::to_string(t_now->tm_year + 1900) + '-' + std::to_string(t_now->tm_mon + 1) + '-' + std::to_string(t_now->tm_mday) + "-" + std::to_string(t_now->tm_hour) + std::to_string(t_now->tm_min) + std::to_string(t_now->tm_sec);
+        std::string now = std::to_string(t_now->tm_year + 1900) + std::to_string(t_now->tm_mon + 1) + std::to_string(t_now->tm_mday) + "_" + std::to_string(t_now->tm_hour) + std::to_string(t_now->tm_min) + std::to_string(t_now->tm_sec);
         return now;
     }
 
@@ -70,5 +70,5 @@ namespace utils
             return true;
         }
         return false;
-}
+    }
 }
