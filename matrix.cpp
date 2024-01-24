@@ -15,6 +15,14 @@ Matrix::Matrix(std::string path, bool b_csr, bool b_csc)
     if (b_csc) make_csc();
 }
 
+Matrix::Matrix(std::string path) : Matrix(path, true, true) {}
+
+Matrix::~Matrix()
+{
+    if (csc) delete csc;
+    if (csr) delete csr;
+}
+
 void Matrix::setFile(std::string path)
 {
     this->path = path; 
@@ -45,6 +53,11 @@ csr_matrix* Matrix::make_csr()
 
 	
 	file.close();
+    csr->col_ind.shrink_to_fit();
+    csr->row_id.shrink_to_fit();
+    csr->values.shrink_to_fit();
+    csr->row_ptr.shrink_to_fit();
+
     TIMERSTOP(BUILD_CSR);
     return csr;
 }
@@ -79,6 +92,11 @@ csr_matrix* Matrix::make_csr_bin()
 	delete buffer;
 	file.close();;
 
+    csr->col_ind.shrink_to_fit();
+    csr->row_id.shrink_to_fit();
+    csr->values.shrink_to_fit();
+    csr->row_ptr.shrink_to_fit();
+
     return csr;
 }
 
@@ -98,7 +116,7 @@ csc_matrix* Matrix::make_csc()
     csc->row_ind.resize(csr->values.size(), 0);
     csc->values.resize(csr->values.size(), 0);
     
-    std::vector<uint32_t> cols(csr->col_ind.size(), 0); 
+    std::unordered_map<uint32_t,uint32_t> cols; 
 
     for (size_t i = 0; i < csr->col_ind.size(); i++) {
         cols[csr->col_ind[i]]++; 
@@ -116,12 +134,7 @@ csc_matrix* Matrix::make_csc()
 
     for (size_t i = 0; i < csr->row_id.size(); i++) {
         size_t start = csr->row_ptr[i];
-        size_t stop; 
-        if (i == csr->row_id.size() - 1) {
-            stop = csr->values.size();
-        } else {
-            stop = csr->row_ptr[i+1];
-        }
+        size_t stop = csr->row_ptr[i+1];
 
         for (size_t j = start; j < stop; j++) {
             csc->row_ind[cols[csr->col_ind[j]]] = csr->row_id[i];
@@ -132,9 +145,13 @@ csc_matrix* Matrix::make_csc()
 
     cols.clear();
 
+    csc->col_id.shrink_to_fit();
+    csc->col_ptr.shrink_to_fit();
+
     if (flag) {
         delete csr; 
     }
+
     TIMERSTOP(BUILD_CSC);
     return csc;
 }

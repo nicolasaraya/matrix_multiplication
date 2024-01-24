@@ -3,3 +3,5 @@
 *.out
 *.txt
 *.out
+.vscode
+matrix_multiplicator

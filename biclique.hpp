@@ -1,5 +1,5 @@
-#ifndef MATRIX_CSR
-#define MATRIX_CSR
+#ifndef BICLIQUE_CSR
+#define BICLIQUE_CSR
 
 #include <iostream>
 #include <cstdint>
@@ -9,15 +9,18 @@
 #include <set>
 #include <unordered_map>
 
+#include <matrix.hpp>
 #include <utils.hpp>
 
 
-struct csr_matrix 
+struct csr_biclique 
 {
     std::vector<int32_t> values; 
     std::vector<uint32_t> col_ind;
     std::vector<uint32_t> row_ptr;
-    std::vector<uint32_t> row_id;
+    //std::vector<uint32_t> row_id;
+    std::vector<std::vector<uint32_t>> row_id;
+    std::vector<std::pair<uint32_t, std::vector<uint32_t>>> row_id_2; 
 
     void print()
     {
@@ -35,19 +38,36 @@ struct csr_matrix
         } 
         std::cout << std::endl << "row_id: ";
         for (auto i : row_id) {
-            std::cout << i << " ";
+            std::cout << "{";
+            for (auto j : i) {
+                std::cout << j << " ";
+            }
+            std::cout << "}";
+        }
+
+        std::cout << std::endl << "row_id_2: ";
+        for (auto i : row_id_2) {
+            std::cout << i.first << ": "; 
+            for (auto j : i.second ){
+                std::cout << j << " ";
+            }
+            std::cout << std::endl;
         } 
         std::cout << std::endl;
 
     }
 };
 
-struct csc_matrix 
+typedef csc_matrix csc_biclique;
+
+/*
+struct csc_biclique
 {
     std::vector<int32_t> values; 
     std::vector<uint32_t> row_ind;
     std::vector<uint32_t> col_ptr;
     std::vector<uint32_t> col_id;
+
 
     void print()
     {
@@ -66,36 +86,37 @@ struct csc_matrix
         std::cout << std::endl << "col_id: ";
         for (auto i : col_id) {
             std::cout << i << " ";
-        } 
+        }
+
         std::cout << std::endl;
 
     }
 };
+*/
 
-
-class Matrix {
+class Biclique {
     public:
-        Matrix();
-        Matrix(std::string path, bool b_csr, bool b_csc);
-        Matrix(std::string path);
-        ~Matrix();
+        Biclique();
+        Biclique(std::string path);
+        ~Biclique();
         void setFile(std::string path); 
-        csr_matrix* make_csr_bin();
-        csr_matrix* make_csr();
-        csc_matrix* make_csc();
-        csr_matrix* get_csr();
-        csc_matrix* get_csc();
-        void set_csr(csr_matrix* mat);
-        void set_csc(csc_matrix* mat);
+        void make_csr_bin();
+        void make_csr();
+        void make_csc();
+        csr_biclique* get_csr();
+        csc_biclique* get_csc();
+        void set_csr(csr_biclique* mat);
+        void set_csc(csc_biclique* mat);
         void delete_csr();
         void delete_csc();
-        void saveTxt();
-        void saveTxt(std::string path);
-        void saveBin();
+        uint64_t getNumEdges(); 
     private:
         std::string path = "";
-        csr_matrix* csr = nullptr;
-        csc_matrix* csc = nullptr; 
+        csr_biclique* csr = nullptr;
+        csc_biclique* csc = nullptr; 
+        uint64_t num_edges = 0;
+        //uint32_t max_edges = 0; 
+
 };
 
 

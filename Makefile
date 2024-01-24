@@ -2,19 +2,22 @@ OBJS	=   	main.o \
 				matrix.o \
 				multiplicator.o \
 				utils.o \
+				biclique.o \
 
 SOURCE	=       main.cpp \
 				matrix.cpp \
 				multiplicator.cpp \
 				utils.cpp \
+				biclique.cpp \
 
 HEADER	=       matrix.hpp \
 				multiplicator.hpp \
 				utils.hpp \
+				biclique.hpp \
 
 OUT	=           matrix_multiplicator
-CC	 =          g++
-FLAGS =         -c  -std=c++20 -I.
+CC	 =          g++-11
+FLAGS =         -c  -std=c++17 -I.
 DEBUG_FLAGS =	-O0 -g -Wall
 OPT = 			-O3
 LFLAGS	=       -lm                                                                                                                                    
@@ -43,5 +46,7 @@ multiplicator.o: multiplicator.cpp
 utils.o: utils.cpp
 	$(CC) $(FLAGS) utils.cpp
 
+biclique.o: biclique.cpp
+	$(CC) $(FLAGS) biclique.cpp
 clean:
 	rm -f $(OBJS) $(OBJS_CHECKER) $(OUT)
