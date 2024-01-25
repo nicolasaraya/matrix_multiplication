@@ -20,7 +20,7 @@ struct csr_biclique
     std::vector<uint32_t> row_ptr;
     //std::vector<uint32_t> row_id;
     std::vector<std::vector<uint32_t>> row_id;
-    std::vector<std::pair<uint32_t, std::vector<uint32_t>>> row_id_2; 
+    //std::vector<std::pair<uint32_t, std::vector<uint32_t>>> row_id_2; 
 
     void print()
     {
@@ -44,7 +44,7 @@ struct csr_biclique
             }
             std::cout << "}";
         }
-
+        /*
         std::cout << std::endl << "row_id_2: ";
         for (auto i : row_id_2) {
             std::cout << i.first << ": "; 
@@ -54,17 +54,18 @@ struct csr_biclique
             std::cout << std::endl;
         } 
         std::cout << std::endl;
+        */
 
     }
 };
 
-typedef csc_matrix csc_biclique;
+//typedef csc_matrix csc_biclique;
 
-/*
+
 struct csc_biclique
 {
     std::vector<int32_t> values; 
-    std::vector<uint32_t> row_ind;
+    std::vector<uint32_t> row_ind; //index de row_id de csr. 
     std::vector<uint32_t> col_ptr;
     std::vector<uint32_t> col_id;
 
@@ -92,7 +93,7 @@ struct csc_biclique
 
     }
 };
-*/
+
 
 class Biclique {
     public:

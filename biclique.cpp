@@ -55,10 +55,12 @@ void Biclique::make_csr()
                 csr->row_ptr.push_back(csr->col_ind.size());
         } else {
             csr->row_id.resize(csr->row_ptr.size()-1, std::vector<uint32_t>());
-            csr->row_id_2.push_back(make_pair(atoll(values[0].c_str()), std::vector<uint32_t>()));
+            //csr->row_id_2.push_back(make_pair(atoll(values[0].c_str()), std::vector<uint32_t>()));
             for (size_t i = 1; i < values.size(); i++) {
-                csr->row_id.at(atoll(values[i].c_str())).push_back(atoll(values[0].c_str()));
-                csr->row_id_2.back().second.push_back(atoll(values[i].c_str()));
+                uint32_t a = atoi(values[i].c_str());
+                uint32_t b = atoi(values[0].c_str());
+                csr->row_id.at(a).push_back(b);
+                //csr->row_id_2.back().second.push_back(atoll(values[i].c_str()));
                 num_edges += ((csr->row_ptr.at(atoll(values[i].c_str())+1)) - (csr->row_ptr.at(atoll(values[i].c_str()))));
             }
         }
@@ -81,7 +83,7 @@ void Biclique::make_csr_bin()
 {
     return;
 }
-
+/*
 void Biclique::make_csc()
 {
     assert(csr != nullptr);
@@ -89,7 +91,7 @@ void Biclique::make_csc()
     TIMERSTART(BUILD_CSC_BICLIQUE);
 
     csc = new csc_biclique();
-    //std::vector<uint32_t> cols(num_edges, 0); 
+
     std::unordered_map<uint32_t, uint32_t> cols;
 
     for (size_t i = 0; i < csr->row_id.size(); i++) {
@@ -100,14 +102,6 @@ void Biclique::make_csc()
         }
 
     }
-
-    /*
-    for (size_t i = 0; i < cols.size(); i++) {
-        if (cols[i] > 0) {
-            std::cout << i << ": " << cols[i] << std::endl;
-        }
-    }
-    */
 
     csc->col_ptr.push_back(0);
     csc->row_ind.resize(num_edges, 0);
@@ -144,6 +138,62 @@ void Biclique::make_csc()
 
     TIMERSTOP(BUILD_CSC_BICLIQUE);
 }
+*/
+
+void Biclique::make_csc() 
+{
+    assert(csr != nullptr);
+
+    TIMERSTART(BUILD_CSC_BICLIQUE);
+
+    csc = new csc_biclique();
+    csc->col_ptr.push_back(0);
+
+    std::unordered_map<uint32_t, uint32_t> cols;
+
+    for (size_t i = 0; i < csr->row_id.size(); i++) {
+        size_t start = csr->row_ptr.at(i);
+        size_t stop = csr->row_ptr.at(i+1);
+        for (size_t j = start; j < stop; j++) {
+            cols[csr->col_ind.at(j)]++;
+        }
+
+    }
+
+    size_t count = 0;
+    for (size_t i = 0; i < cols.size(); i++) {
+        if (cols[i] > 0) {
+            count += cols[i];
+            csc->col_id.push_back(i);
+            uint32_t temp = csc->col_ptr.back();
+            csc->col_ptr.push_back(csc->col_ptr.back() + cols[i]);
+            cols[i] = temp;
+            //std::cout << i << ": " << cols[i] << std::endl;
+        }
+    }
+  
+
+    csc->row_ind.resize(count, 0);
+    csc->values.resize(count, 0);
+    
+
+    for (size_t i = 0; i < csr->row_id.size(); i++) {
+        size_t start = csr->row_ptr.at(i);
+        size_t stop = csr->row_ptr.at(i+1);
+
+        for (size_t j = start; j < stop; j++) {
+            //std::cout << csr->col_ind[j] << " " << start << " " << stop << " " << j  <<" "<< csr->col_ind[j]  << " " <<cols[csr->col_ind[j]] <<std::endl;
+            csc->row_ind[cols[csr->col_ind[j]]] = i; //id de row_id
+            csc->values[cols[csr->col_ind[j]]] = csr->values[j];
+            cols[csr->col_ind[j]]++;
+        }
+    }
+    //csc->print();
+
+    TIMERSTOP(BUILD_CSC_BICLIQUE);
+
+}
+
 
 csr_biclique *Biclique::get_csr()
 {

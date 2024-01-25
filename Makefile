@@ -16,8 +16,8 @@ HEADER	=       matrix.hpp \
 				biclique.hpp \
 
 OUT	=           matrix_multiplicator
-CC	 =          g++-11
-FLAGS =         -c  -std=c++17 -I.
+CC	 =          g++
+FLAGS =         -c  -std=c++20 -I.
 DEBUG_FLAGS =	-O0 -g -Wall
 OPT = 			-O3
 LFLAGS	=       -lm                                                                                                                                    
