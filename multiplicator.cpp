@@ -63,7 +63,7 @@ Matrix* mat_pow(Matrix* A, Biclique* b)
 }
 
 
-csr_matrix* mult(csc_matrix* csc, csr_matrix* csr)
+csr_matrix* mult(csc_matrix* csc, csr_matrix* csr) //AxA
 {
     assert(csc != nullptr and csr != nullptr);
     auto inters = get_intersections(csc, csr);
@@ -71,7 +71,7 @@ csr_matrix* mult(csc_matrix* csc, csr_matrix* csr)
     return nullptr;
 }
 
-csr_matrix* mult(csc_matrix* csc, csr_biclique* csr) 
+csr_matrix* mult(csc_matrix* csc, csr_biclique* csr)  //Axb
 {
     assert(csc != nullptr and csr != nullptr);
     auto inters = get_intersections(csc, csr);
@@ -211,7 +211,7 @@ csr_matrix* csr_add(csr_matrix* A, csr_matrix* B)
 
 /* Compute Intersections */
 
-csr_matrix* compute_intersections(std::vector<Intersection_MM>* inters, csc_matrix* csc, csr_matrix* csr) 
+csr_matrix* compute_intersections(std::vector<Intersection_MM>* inters, csc_matrix* csc, csr_matrix* csr)  //AxA
 {
     assert(csc != nullptr and csr != nullptr);
 
@@ -533,8 +533,12 @@ std::vector<Intersection_MM>* get_intersections(csc_matrix* A, csr_biclique* csr
     assert(A != nullptr and csr_b != nullptr);
     
     std::vector<uint32_t> indexes(csr_b->row_id.size(), 0);
-    
+    uint32_t count = 0;
+
+
     for (size_t i = 0; i < A->col_id.size(); i++) {
+        if (count == csr_b->row_id.size() - 1) break;
+
         for (size_t j = 0; j < csr_b->row_id.size(); j++) {
             while (indexes[j] < csr_b->row_id[j].size() and A->col_id[i] > csr_b->row_id[j].at(indexes[j])){
                 indexes[j]++;
@@ -549,7 +553,9 @@ std::vector<Intersection_MM>* get_intersections(csc_matrix* A, csr_biclique* csr
                 inter.value_row = csr_b->col_ind[inter.start_row];
                 inters->push_back(inter);
                 indexes[j]++;
-            } 
+            }  else if (indexes[j] == csr_b->row_id[j].size()) {
+                count++;
+            }
         }
     }  
     return inters;
@@ -607,8 +613,11 @@ std::vector<Intersection_bb>* get_intersections(csc_biclique* csc_b, csr_bicliqu
     assert(csc_b != nullptr and csr_b != nullptr);
 
     std::vector<uint32_t> indexes(csr_b->row_id.size(), 0);
+
+    uint32_t count = 0;
     
     for (size_t i = 0; i < csc_b->col_id.size(); i++) {
+        if (count  == csr_b->row_id.size() - 1) break;
         for (size_t j = 0; j < csr_b->row_id.size(); j++) {
             while (indexes[j] < csr_b->row_id.at(j).size() and csc_b->col_id[i] > csr_b->row_id.at(j).at(indexes[j])){
                 indexes[j]++;
@@ -635,7 +644,9 @@ std::vector<Intersection_bb>* get_intersections(csc_biclique* csc_b, csr_bicliqu
                 }
 
                 indexes[j]++;
-            } 
+            } else if (indexes[j] == csr_b->row_id[j].size()) {
+                count++;
+            }
         }
     }
 
