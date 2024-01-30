@@ -73,6 +73,7 @@ struct csc_matrix
 };
 
 
+
 class Matrix {
     public:
         Matrix();
@@ -91,12 +92,14 @@ class Matrix {
         void delete_csc();
         void saveTxt();
         void saveTxt(std::string path);
-        void saveBin();
     private:
         std::string path = "";
         csr_matrix* csr = nullptr;
         csc_matrix* csc = nullptr; 
 };
+
+
+
 
 
 #endif

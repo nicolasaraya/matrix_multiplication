@@ -29,6 +29,7 @@ int main(int argc, char const *argv[])
         TIMERSTOP(BUILD_MATRIX);
         TIMERSTART(BUILD_BICLIQUES)
         Biclique b(argv[2]);
+        b.get_csc()->print();
         TIMERSTOP(BUILD_BICLIQUES);
         TIMERSTART(TIME_POW_BICLIQUES);
         auto res = mat_pow(&m, &b);

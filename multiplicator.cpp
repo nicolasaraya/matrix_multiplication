@@ -74,8 +74,13 @@ csr_matrix* mult(csc_matrix* csc, csr_matrix* csr) //AxA
 csr_matrix* mult(csc_matrix* csc, csr_biclique* csr)  //Axb
 {
     assert(csc != nullptr and csr != nullptr);
+    TIMERSTART(GET_INTERS);
     auto inters = get_intersections(csc, csr);
-    return compute_intersections(inters, csc, csr);
+    TIMERSTOP(GET_INTERS);
+    TIMERSTART(COMPUTE_INTERS);
+    auto res = compute_intersections(inters, csc, csr);
+    TIMERSTOP(COMPUTE_INTERS);
+    return res;
 }
 
 
