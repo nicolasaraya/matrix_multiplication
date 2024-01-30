@@ -50,6 +50,7 @@ csr_matrix* Matrix::make_csr()
 
 	}
     csr->row_ptr.push_back(csr->col_ind.size());
+    csr->max_row = csr->row_id.back();
 
 	
 	file.close();
@@ -147,6 +148,7 @@ csc_matrix* Matrix::make_csc()
 
     csc->col_id.shrink_to_fit();
     csc->col_ptr.shrink_to_fit();
+    csc->max_col = csc->col_id.back();
 
     if (flag) {
         delete csr; 

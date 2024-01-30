@@ -3,6 +3,7 @@
 
 Matrix* mat_mult(Matrix* A, Matrix* B) 
 {
+    assert(A != nullptr and B != nullptr);
     auto res_csr = mult(A->get_csc(), B->get_csr());
     auto res = new Matrix();
     res->set_csr(res_csr);
@@ -38,7 +39,7 @@ Matrix* mat_mult(Matrix* A, Biclique* Ab, Matrix* B, Biclique* Bb)
     TIMERSTOP(APPEND2);
     delete resAbxA;
     delete resAbxBb;
-
+    
     TIMERSTART(APPEND3);
     auto add3 = csr_add(add, add2);
     TIMERSTOP(APPEND3);
@@ -67,19 +68,23 @@ csr_matrix* mult(csc_matrix* csc, csr_matrix* csr) //AxA
 {
     assert(csc != nullptr and csr != nullptr);
     auto inters = get_intersections(csc, csr);
-    return compute_intersections(inters, csc, csr);
-    return nullptr;
+    std::cout << "num inters: " << inters->size() << std::endl;
+    auto res = compute_intersections(inters, csc, csr);
+    //res->print();
+    return res;
 }
 
 csr_matrix* mult(csc_matrix* csc, csr_biclique* csr)  //Axb
 {
     assert(csc != nullptr and csr != nullptr);
-    TIMERSTART(GET_INTERS);
+    //TIMERSTART(GET_INTERS);
     auto inters = get_intersections(csc, csr);
-    TIMERSTOP(GET_INTERS);
-    TIMERSTART(COMPUTE_INTERS);
+    std::cout << "num inters: " << inters->size() << std::endl;
+    //TIMERSTOP(GET_INTERS);
+    //TIMERSTART(COMPUTE_INTERS);
     auto res = compute_intersections(inters, csc, csr);
-    TIMERSTOP(COMPUTE_INTERS);
+    //res->print();
+    //TIMERSTOP(COMPUTE_INTERS);
     return res;
 }
 
@@ -87,15 +92,26 @@ csr_matrix* mult(csc_matrix* csc, csr_biclique* csr)  //Axb
 csr_matrix* mult(csr_biclique* csr_b, csc_biclique* csc_b, csr_matrix* A) //bxA
 {
     assert(csr_b != nullptr and csc_b != nullptr and A != nullptr);
+    TIMERSTART(GET_INTERS);
     auto inters = get_intersections(csr_b, csc_b, A);
-    return compute_intersections(inters, csr_b, csc_b, A);
+    std::cout << "num inters: " << inters->size() << std::endl;
+    TIMERSTOP(GET_INTERS);
+    TIMERSTART(COMPUTE_INTERS);
+    auto res = compute_intersections(inters, csr_b, csc_b, A);
+    //res->print();
+    TIMERSTOP(COMPUTE_INTERS);
+    return res;
 }
 
 csr_matrix* mult(csc_biclique* csc, csr_biclique* csr) //bxb
 {
     assert(csc != nullptr and csr != nullptr);
+
     auto inters = get_intersections(csc, csr);
-    return compute_intersections(inters, csc, csr);
+    std::cout << "num inters: " << inters->size() << std::endl;
+    auto res = compute_intersections(inters, csc, csr);
+    res->print();
+    return res;
 }
 
 csr_matrix* csr_add(csr_matrix* A, csr_matrix* B)
@@ -296,7 +312,7 @@ csr_matrix* compute_intersections(std::vector<Intersection_MM>* inters, csc_matr
 
 
     for (auto i : *inters) {
-        //std::cout << i.index_col << " " << i.index_row << " | " << i.start_col << " " << i.end_col << " | " << i.start_row << " " << i.end_row << " | " << i.value_col << " " << i.value_row << std::endl;
+        //std::cout << i.start_col << " " << i.end_col << " | " << i.start_row << " " << i.end_row << " | " << i.value_col << " " << i.value_row << std::endl;
         Hr.push(i);
     }
 
@@ -363,13 +379,14 @@ csr_matrix* compute_intersections(std::vector<Intersection_bb>* inters, csr_bicl
     std::priority_queue<Intersection_bb, std::vector<Intersection_bb>, Intersection_bb::Col_Comp> Hr;
     std::priority_queue<Intersection_bb, std::vector<Intersection_bb>, Intersection_bb::Row_Comp> Hc;
 
-
+    TIMERSTART(PUSH);
     for (auto i : *inters) {
         //std::cout << i.col_id << " | " << i.start_col << " " << i.end_col << " | " << i.start_row << " " << i.end_row << " | " << i.value_col << " " << i.value_row << " | " << i.weight <<std::endl;
         Hr.push(i);
     }
 
     delete inters;
+    TIMERSTOP(PUSH);
 
     
     while (not Hr.empty()) {
@@ -537,32 +554,46 @@ std::vector<Intersection_MM>* get_intersections(csc_matrix* A, csr_biclique* csr
 
     assert(A != nullptr and csr_b != nullptr);
     
-    std::vector<uint32_t> indexes(csr_b->row_id.size(), 0);
-    uint32_t count = 0;
-
-
+    //std::vector<std::pair<uint32_t,uint32_t>> history(A->col_id.back(), std::pair(0,0));
+    //std::unordered_map<uint32_t, uint32_t> history;
+    std::vector<uint32_t> history(A->max_col+1, UINT32_MAX);
+    //uint32_t count = 0;
+    uint32_t max = csr_b->max_row;
+    
     for (size_t i = 0; i < A->col_id.size(); i++) {
-        if (count == csr_b->row_id.size() - 1) break;
+        //history[A->col_id[i]].first++;
+        //history[A->col_id[i]].second = i;
+        if (A->col_id[i] > max) break;
+        history[A->col_id[i]] = i;
+    }
 
-        for (size_t j = 0; j < csr_b->row_id.size(); j++) {
-            while (indexes[j] < csr_b->row_id[j].size() and A->col_id[i] > csr_b->row_id[j].at(indexes[j])){
-                indexes[j]++;
-            } 
-            if (indexes[j] != csr_b->row_id[j].size() and A->col_id[i] == csr_b->row_id[j].at(indexes[j])) { 
+    //for (size_t i = 0; i < history.size(); i++) {
+    //    if (history[i] != UINT32_MAX) {
+    //        std::cout << i << ": " << history[i] << std::endl;
+    //    }
+    //}
+
+    
+    for (size_t i = 0; i < csr_b->row_id.size(); i++) {
+        for (size_t j = 0; j < csr_b->row_id[i].size(); j++) {
+            if(csr_b->row_id[i][j] > A->max_col) break;
+            uint32_t key = csr_b->row_id[i][j];
+            uint32_t value = history[key];
+            if (value != UINT32_MAX) {
                 Intersection_MM inter;
-                inter.start_col = A->col_ptr[i];
-                inter.end_col = A->col_ptr[i+1];
-                inter.start_row = csr_b->row_ptr[j];
-                inter.end_row =  csr_b->row_ptr[j+1];
+                inter.start_col = A->col_ptr[value];
+                inter.end_col = A->col_ptr[value + 1];
                 inter.value_col = A->row_ind[inter.start_col];
+                inter.start_row = csr_b->row_ptr[i];
+                inter.end_row = csr_b->row_ptr[i+1];
                 inter.value_row = csr_b->col_ind[inter.start_row];
                 inters->push_back(inter);
-                indexes[j]++;
-            }  else if (indexes[j] == csr_b->row_id[j].size()) {
-                count++;
             }
         }
-    }  
+    }
+
+    history.clear();
+    
     return inters;
 }
 
@@ -617,9 +648,43 @@ std::vector<Intersection_bb>* get_intersections(csc_biclique* csc_b, csr_bicliqu
 
     assert(csc_b != nullptr and csr_b != nullptr);
 
-    std::vector<uint32_t> indexes(csr_b->row_id.size(), 0);
+    
+    std::vector<uint32_t> history(csc_b->max_col + 1, UINT32_MAX);
 
+    for (size_t i = 0; i < csc_b->col_id.size(); i++) {
+        //history[A->col_id[i]].first++;
+        //history[A->col_id[i]].second = i;
+        history[csc_b->col_id[i]] = i;
+    }
+
+    for (size_t i = 0; i < csr_b->row_id.size(); i++) {
+        for (size_t j = 0; j < csr_b->row_id[i].size(); j++) {
+            uint32_t key = csr_b->row_id[i][j];
+            if (history[key] != UINT32_MAX) {
+                size_t index_row_start = csc_b->col_ptr[history[key]];
+                size_t index_row_stop = csc_b->col_ptr[history[key]+1];
+                for (size_t k = index_row_start; k < index_row_stop; k++) {
+                    Intersection_bb inter;
+                    inter.col_id = csc_b->row_ind[k];
+                    inter.start_col = 0;
+                    inter.end_col = csr_b->row_id[inter.col_id].size();
+                    inter.start_row = csr_b->row_ptr[i];
+                    inter.end_row = csr_b->row_ptr[i+1];
+                    inter.value_col = csr_b->row_id[inter.col_id][inter.start_col];
+                    inter.value_row = csr_b->col_ind[inter.start_row];
+                    inter.weight = csc_b->values[k];
+                    inters->push_back(inter);
+                }
+            }
+
+        }
+    }
+    /*
+
+
+    
     uint32_t count = 0;
+    std::vector<uint32_t> indexes(csr_b->row_id.size(), 0);
     
     for (size_t i = 0; i < csc_b->col_id.size(); i++) {
         if (count  == csr_b->row_id.size() - 1) break;
@@ -654,6 +719,6 @@ std::vector<Intersection_bb>* get_intersections(csc_biclique* csc_b, csr_bicliqu
             }
         }
     }
-
+    */
     return inters;
 }

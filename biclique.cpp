@@ -60,6 +60,7 @@ void Biclique::make_csr()
                 uint32_t a = atoi(values[i].c_str());
                 uint32_t b = atoi(values[0].c_str());
                 csr->row_id.at(a).push_back(b);
+                if (b > csr->max_row) csr->max_row = b;
                 //csr->row_id_2.back().second.push_back(atoll(values[i].c_str()));
                 num_edges += ((csr->row_ptr.at(atoll(values[i].c_str())+1)) - (csr->row_ptr.at(atoll(values[i].c_str()))));
             }
@@ -189,6 +190,8 @@ void Biclique::make_csc()
         }
     }
     //csc->print();
+
+    csc->max_col = csc->col_id.back();
 
     TIMERSTOP(BUILD_CSC_BICLIQUE);
 

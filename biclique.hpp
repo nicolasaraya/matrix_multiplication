@@ -20,6 +20,9 @@ struct csr_biclique
     std::vector<uint32_t> row_ptr;
     //std::vector<uint32_t> row_id;
     std::vector<std::vector<uint32_t>> row_id;
+
+    uint32_t max_row = 0;
+
     //std::vector<std::pair<uint32_t, std::vector<uint32_t>>> row_id_2; 
 
     void print()
@@ -69,6 +72,7 @@ struct csc_biclique
     std::vector<uint32_t> col_ptr;
     std::vector<uint32_t> col_id;
 
+    uint32_t max_col = 0;
 
     void print()
     {

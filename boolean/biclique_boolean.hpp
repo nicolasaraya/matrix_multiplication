@@ -1,0 +1,6 @@
+#ifndef BICLIQUE_BOOLEAN
+#define BICLIQUE_BOOLEAN
+
+
+
+#endif

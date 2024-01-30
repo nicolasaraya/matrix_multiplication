@@ -19,6 +19,8 @@ struct csr_matrix
     std::vector<uint32_t> row_ptr;
     std::vector<uint32_t> row_id;
 
+    uint32_t max_row = 0;
+
     void print()
     {
         std::cout << "values: ";
@@ -48,6 +50,8 @@ struct csc_matrix
     std::vector<uint32_t> row_ind;
     std::vector<uint32_t> col_ptr;
     std::vector<uint32_t> col_id;
+
+    uint32_t max_col = 0;
 
     void print()
     {

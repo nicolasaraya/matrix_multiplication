@@ -51,7 +51,7 @@ namespace boolean
             csr->row_id.push_back(id);
             csr->row_ptr.push_back(csr->col_ind.size());
         }
-
+        csr->max_row = csr->row_id.back();
         file.close();
         return csr;
     }
@@ -89,7 +89,7 @@ namespace boolean
 
         cols.clear();
 
-
+        csc->max_col = csc->col_id.back();
         return csc;
     }
 
