@@ -17,11 +17,9 @@ struct csr_biclique
 {
     std::vector<int32_t> values; 
     std::vector<uint32_t> col_ind;
-    std::vector<uint32_t> row_ptr;
+    //std::vector<uint32_t> row_ptr;
     //std::vector<uint32_t> row_id;
-    std::vector<std::vector<uint32_t>> row_id;
-
-    uint32_t max_row = 0;
+    std::vector<uint32_t> row_id;
 
     //std::vector<std::pair<uint32_t, std::vector<uint32_t>>> row_id_2; 
 
@@ -35,18 +33,15 @@ struct csr_biclique
         for (auto i : col_ind) {
             std::cout << i << " ";
         } 
-        std::cout << std::endl << "row_ptr: "; 
-        for (auto i : row_ptr) {
-            std::cout << i << " ";
-        } 
+        //std::cout << std::endl << "row_ptr: "; 
+        //for (auto i : row_ptr) {
+        //    std::cout << i << " ";
+        //} 
         std::cout << std::endl << "row_id: ";
         for (auto i : row_id) {
-            std::cout << "{";
-            for (auto j : i) {
-                std::cout << j << " ";
-            }
-            std::cout << "}";
+            std::cout << i << " ";
         }
+        std::cout << std::endl;
         /*
         std::cout << std::endl << "row_id_2: ";
         for (auto i : row_id_2) {
@@ -68,11 +63,10 @@ struct csr_biclique
 struct csc_biclique
 {
     std::vector<int32_t> values; 
-    std::vector<uint32_t> row_ind; //index de row_id de csr. 
-    std::vector<uint32_t> col_ptr;
+    std::vector<uint32_t> row_ind; 
+    //std::vector<uint32_t> col_ptr;
     std::vector<uint32_t> col_id;
 
-    uint32_t max_col = 0;
 
     void print()
     {
@@ -84,10 +78,10 @@ struct csc_biclique
         for (auto i : row_ind) {
             std::cout << i << " ";
         } 
-        std::cout << std::endl << "col_ptr: "; 
-        for (auto i : col_ptr) {
-            std::cout << i << " ";
-        } 
+        //std::cout << std::endl << "col_ptr: "; 
+        //for (auto i : col_ptr) {
+        //    std::cout << i << " ";
+        //} 
         std::cout << std::endl << "col_id: ";
         for (auto i : col_id) {
             std::cout << i << " ";
@@ -108,19 +102,28 @@ class Biclique {
         void make_csr_bin();
         void make_csr();
         void make_csc();
-        csr_biclique* get_csr();
-        csc_biclique* get_csc();
-        void set_csr(csr_biclique* mat);
-        void set_csc(csc_biclique* mat);
+        void print_csr();
+        void print_csc();
+        std::vector<csr_biclique*>* get_csr();
+        std::vector<csc_biclique*>* get_csc();
+        //void set_csr(csr_biclique* mat);
+        //void set_csc(csc_biclique* mat);
         void delete_csr();
         void delete_csc();
+        uint32_t maxCol();
+        uint32_t maxRow();
+        uint32_t maxDim();
         uint64_t getNumEdges(); 
     private:
         std::string path = "";
-        csr_biclique* csr = nullptr;
-        csc_biclique* csc = nullptr; 
+        std::vector<csr_biclique*>* csr = nullptr;
+        std::vector<csc_biclique*>* csc = nullptr;
+        //csr_biclique* csr = nullptr;
+        //csc_biclique* csc = nullptr; 
         uint64_t num_edges = 0;
-        //uint32_t max_edges = 0; 
+        //uint32_t max_edges = 0;
+        uint32_t max_col = 0;
+        uint32_t max_row = 0; 
 
 };
 

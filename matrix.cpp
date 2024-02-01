@@ -213,6 +213,8 @@ void Matrix::saveTxt(std::string pathFile) {
             file << csr->row_id[i] << " " << csr->col_ind[j] << " " << csr->values[j] << std::endl;
         }
     }
+
+    file.close();
     
 }
 
