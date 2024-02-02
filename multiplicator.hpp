@@ -42,45 +42,47 @@ const auto min_heap_comp = [](const auto& a, const auto& b) {
 };
 
 
-struct Res_bic {
-    std::vector<uint32_t>* S;
-    std::vector<std::pair<uint32_t,uint32_t>>* C; 
+struct Inters_Bicl {
+    std::vector<uint32_t>* row_id; // S 
+    //std::vector<std::pair<uint32_t,uint32_t>>* C; 
+    std::vector<uint32_t> col_ind; //C
+    std::vector<uint32_t> values;
 
     uint32_t key_s = 0;
     uint32_t key_c = 0;
     uint32_t index_s = 0;
     uint32_t index_c = 0;
 
-    static bool compare(const Res_bic& a, const Res_bic& b) 
+    static bool compare(const Inters_Bicl& a, const Inters_Bicl& b) 
     {
         // Comparar por el primer elemento de S
-        if ((not a.S->empty()) and (not b.S->empty())) {
-            if (a.S->at(a.index_s) != b.S->at(b.index_s)) {
-                return a.S->at(a.index_s) > b.S->at(b.index_s);  // Ordenar de menor a mayor en S
+        if ((not a.row_id->empty()) and (not b.row_id->empty())) {
+            if (a.row_id->at(a.index_s) != b.row_id->at(b.index_s)) {
+                return a.row_id->at(a.index_s) > b.row_id->at(b.index_s);  // Ordenar de menor a mayor en S
             }
         }
 
         // Comparar por el primer elemento de C si S es igual
-        if ((not a.C->empty()) and (not b.C->empty())) {
-            return a.C->at(a.index_c).first > b.C->at(b.index_c).first;  // Ordenar de menor a mayor en C
+        if ((not a.col_ind.empty()) and (not b.col_ind.empty())) {
+            return a.col_ind.at(a.index_c) > b.col_ind.at(b.index_c);  // Ordenar de menor a mayor en C
         }
 
         // En caso de empate, no cambia el orden
         return false;
     }
 
-    static bool compare_ptr(const Res_bic* a, const Res_bic* b) 
+    static bool compare_ptr(const Inters_Bicl* a, const Inters_Bicl* b) 
     {
         // Comparar por el primer elemento de S
-        if ((not a->S->empty()) and (not b->S->empty())) {
-            if (a->S->at(a->index_s) != b->S->at(b->index_s)) {
-                return a->S->at(a->index_s) > b->S->at(b->index_s);  // Ordenar de menor a mayor en S
+        if ((not a->row_id->empty()) and (not b->row_id->empty())) {
+            if (a->row_id->at(a->index_s) != b->row_id->at(b->index_s)) {
+                return a->row_id->at(a->index_s) > b->row_id->at(b->index_s);  // Ordenar de menor a mayor en S
             }
         }
 
         // Comparar por el primer elemento de C si S es igual
-        if ((not a->C->empty()) and (not b->C->empty())) {
-            return a->C->at(a->index_c).first > b->C->at(b->index_c).first;  // Ordenar de menor a mayor en C
+        if ((not a->col_ind.empty()) and (not b->col_ind.empty())) {
+            return a->col_ind.at(a->index_c) > b->col_ind.at(b->index_c);  // Ordenar de menor a mayor en C
         }
 
         // En caso de empate, no cambia el orden
@@ -89,7 +91,7 @@ struct Res_bic {
 
     struct comp_row
     {
-        bool operator()(const Res_bic& a, const Res_bic& b) const {
+        bool operator()(const Inters_Bicl& a, const Inters_Bicl& b) const {
             return (a.key_s) > (b.key_s);
         }
 
@@ -97,7 +99,7 @@ struct Res_bic {
   
     struct comp_col
     {
-        bool operator()(const Res_bic& a, const Res_bic& b) const {
+        bool operator()(const Inters_Bicl& a, const Inters_Bicl& b) const {
             return (a.key_c) > (b.key_c);
         }
 
@@ -105,7 +107,7 @@ struct Res_bic {
 
     struct comp_comb
     {
-        bool operator()(const Res_bic& a, const Res_bic& b) const {
+        bool operator()(const Inters_Bicl& a, const Inters_Bicl& b) const {
             if (a.key_s != b.key_s) {
                 return a.key_s < b.key_s;
             } else {

@@ -149,7 +149,7 @@ csr_matrix* mult(csc_matrix* A, csr_matrix* B)  //AxA
         
     }
     csr_res->row_ptr.push_back(csr_res->values.size());
-    std::cout << "edges computed: " << csr_res->values.size() << std::endl;
+    //std::cout << "edges computed: " << csr_res->values.size() << std::endl;
     return csr_res;    
 }
 
@@ -186,8 +186,8 @@ csr_matrix* mult(csc_matrix* A, Biclique* b)
         }
     }
 
-    std::cout << "inters: " << Hr.size() << std::endl;
-    uint32_t count = 0;
+    //std::cout << "inters: " << Hr.size() << std::endl;
+    //uint32_t count = 0;
 
     while (not Hr.empty()) {
         auto elem = Hr.top();
@@ -197,7 +197,7 @@ csr_matrix* mult(csc_matrix* A, Biclique* b)
                 
         if (Hr.empty() or (Hr.top().value_col != elem.value_col)) { //primer elemento de la columna es distinto
             uint32_t sum = 0;
-            count++;
+            //count++;
             while (not Hc.empty()) {
                 auto inter = Hc.top();
                 Hc.pop(); 
@@ -236,9 +236,9 @@ csr_matrix* mult(csc_matrix* A, Biclique* b)
         //std::cout << "new iter" << std::endl;
         
     }
-    std::cout << "count: " <<  count << std::endl;
+    //std::cout << "count: " <<  count << std::endl;
     csr_res->row_ptr.push_back(csr_res->values.size());
-    std::cout << "edges computed: " << csr_res->values.size() << std::endl;
+    //std::cout << "edges computed: " << csr_res->values.size() << std::endl;
     return csr_res;   
 
 }
@@ -259,8 +259,8 @@ csr_matrix* mult(Biclique* b, csr_matrix* A) //bxA
     }
 
     //std::vector<Res_bic> res;
-    std::priority_queue<Res_bic, std::vector<Res_bic>, Res_bic::comp_row> Hr;
-    std::priority_queue<Res_bic, std::vector<Res_bic>, Res_bic::comp_row> Hc;
+    std::priority_queue<Inters_Bicl, std::vector<Inters_Bicl>, Inters_Bicl::comp_row> Hr;
+    std::priority_queue<Inters_Bicl, std::vector<Inters_Bicl>, Inters_Bicl::comp_col> Hc;
 
     
     for (size_t i = 0; i < b_csc->size(); i++) { 
@@ -275,16 +275,17 @@ csr_matrix* mult(Biclique* b, csr_matrix* A) //bxA
                 size_t start_row = A->row_ptr[index[ind]];
                 size_t end_row = A->row_ptr[index[ind] + 1];
                 //std::cout << "find: " << ind  << ", "<< index[ind] <<  ", startrow: " << start_row << ", endrow: " << end_row <<std::endl;
-                Res_bic p;
-                p.S = C_i;
-                p.C = new std::vector<std::pair<uint32_t,uint32_t>>();
+                Inters_Bicl p;
+                p.row_id = C_i;
                 for (size_t k = start_row; k < end_row; k++) {
                     //heap.push(std::pair(A->col_ind[k], A->values[k] * Cv_i->at(j)));
-                    p.C->push_back(std::pair(A->col_ind[k], A->values[k] * Cv_i->at(j)));
+                    //p.C->push_back(std::pair(A->col_ind[k], A->values[k] * Cv_i->at(j)));
+                    p.col_ind.push_back(A->col_ind[k]);
+                    p.values.push_back(A->values[k] * Cv_i->at(j)); 
 
                 }
-                p.key_s = p.S->front();
-                p.key_c = p.C->front().first;
+                p.key_s = p.row_id->front();
+                p.key_c = p.col_ind.front();
                 Hr.push(p);
                 //res.push_back(p);
                 
@@ -294,12 +295,12 @@ csr_matrix* mult(Biclique* b, csr_matrix* A) //bxA
     }
     index.clear();
 
-     std::cout << "inters: " << Hr.size() << std::endl;
+    //std::cout << "inters: " << Hr.size() << std::endl;
     
     //std::priority_queue<Res_bic, std::vector<Res_bic>, decltype(&Res_bic::comp_row)> Hr(res.begin(), res.end(), &Res_bic::comp_row);
     //res.clear();
     //TIMERSTART(WHILE);
-    uint32_t count = 0;
+    //uint32_t count = 0;
     while (not Hr.empty()) {
         auto i = Hr.top();
         Hr.pop();
@@ -309,15 +310,15 @@ csr_matrix* mult(Biclique* b, csr_matrix* A) //bxA
             //std::cout << "size: " <<  Hc.size() << std::endl;
             //res.clear();
             uint32_t sum = 0;
-            count++;
+            //count++;
             while (not Hc.empty()) {
                 auto j = Hc.top();
                 Hc.pop();
-                sum += j.C->at(j.index_c).second;
+                sum += j.values.at(j.index_c);
 
                 if (Hc.empty() or j.key_c != Hc.top().key_c) {
                     csr_res->values.push_back(sum);
-                    csr_res->col_ind.push_back(j.C->at(j.index_c).first);
+                    csr_res->col_ind.push_back(j.col_ind.at(j.index_c));
 
                     if (csr_res->row_id.empty() or (csr_res->row_id.back() != j.key_s)) {
                         csr_res->row_id.push_back(j.key_s);
@@ -325,25 +326,25 @@ csr_matrix* mult(Biclique* b, csr_matrix* A) //bxA
                     }
                     sum = 0;
                 }
-                if (j.index_c < j.C->size() - 1) {
+                if (j.index_c < j.col_ind.size() - 1) {
                     j.index_c++;
-                    j.key_c = j.C->at(j.index_c).first;
+                    j.key_c = j.col_ind.at(j.index_c);
                     Hc.push(j);
                 }
             }
 
         }
-        if (i.index_s < i.S->size() - 1) {
+        if (i.index_s < i.row_id->size() - 1) {
             i.index_s++;
-            i.key_s = i.S->at(i.index_s);
+            i.key_s = i.row_id->at(i.index_s);
             Hr.push(i);
         }
         
     }
     csr_res->row_ptr.push_back(csr_res->col_ind.size()); 
     //TIMERSTOP(WHILE);
-    std::cout << "count: " <<  count << std::endl;
-    std::cout << "edges computed: " << csr_res->values.size() << std::endl;
+    //std::cout << "count: " <<  count << std::endl;
+    //std::cout << "edges computed: " << csr_res->values.size() << std::endl;
 
     return csr_res;
 }
@@ -369,24 +370,25 @@ csr_matrix* mult(Biclique* a, Biclique* b) //bxb
 
     //std::vector<Res_bic> res;
 
-    std::priority_queue<Res_bic, std::vector<Res_bic>, Res_bic::comp_row> Hr;
-    std::priority_queue<Res_bic, std::vector<Res_bic>, Res_bic::comp_col> Hc;
+    std::priority_queue<Inters_Bicl, std::vector<Inters_Bicl>, Inters_Bicl::comp_row> Hr;
+    std::priority_queue<Inters_Bicl, std::vector<Inters_Bicl>, Inters_Bicl::comp_col> Hc;
 
     for (size_t i = 0; i < a_csc->size(); i++) {
         auto csc = a_csc->at(i);
         for (size_t j = 0; j < csc->col_id.size(); j++) {
             if (not h[csc->col_id[j]].empty()) {
                 for (auto index_csr : h[csc->col_id[j]]) {
-                    Res_bic p;
-                    p.S = &(csc->row_ind);
-                    p.key_s = p.S->front();
-                    p.C = new std::vector<std::pair<uint32_t,uint32_t>>();
-                    uint32_t weight = csc->values[j];
+                    Inters_Bicl p;
+                    p.row_id = &(csc->row_ind);
+                    p.key_s = p.row_id->front();
+                    //p.C = new std::vector<std::pair<uint32_t,uint32_t>>();
 
                     for(size_t row = 0; row < b_csr->at(index_csr)->col_ind.size(); row++){
-                        p.C->push_back(std::pair(b_csr->at(index_csr)->col_ind.at(row),weight * b_csr->at(index_csr)->values.at(row)));
+                        //p.C->push_back(std::pair(b_csr->at(index_csr)->col_ind.at(row),weight * b_csr->at(index_csr)->values.at(row)));
+                        p.col_ind.push_back(b_csr->at(index_csr)->col_ind.at(row));
+                        p.values.push_back(csc->values[j] *  b_csr->at(index_csr)->values.at(row));
                     }
-                    p.key_c = p.C->front().first;
+                    p.key_c = p.col_ind.front();
                     Hr.push(p);
                     //res.push_back(p);
                 }
@@ -397,7 +399,7 @@ csr_matrix* mult(Biclique* a, Biclique* b) //bxb
     h.clear();
     auto csr_res = new csr_matrix();
 
-    std::cout << "inters: " << Hr.size() << std::endl;
+    //std::cout << "inters: " << Hr.size() << std::endl;
   
     while (not Hr.empty()) {
         auto i = Hr.top();
@@ -409,11 +411,11 @@ csr_matrix* mult(Biclique* a, Biclique* b) //bxb
             while (not Hc.empty()) {
                 auto j = Hc.top();
                 Hc.pop();
-                sum += j.C->at(j.index_c).second;
+                sum += j.values.at(j.index_c);
 
                 if (Hc.empty() or j.key_c != Hc.top().key_c) {
                     csr_res->values.push_back(sum);
-                    csr_res->col_ind.push_back(j.C->at(j.index_c).first);
+                    csr_res->col_ind.push_back(j.col_ind.at(j.index_c));
 
                     if (csr_res->row_id.empty() or (csr_res->row_id.back() != j.key_s)) {
                         csr_res->row_id.push_back(j.key_s);
@@ -421,17 +423,17 @@ csr_matrix* mult(Biclique* a, Biclique* b) //bxb
                     }
                     sum = 0;
                 }
-                if (j.index_c < j.C->size() - 1) {
+                if (j.index_c < j.col_ind.size() - 1) {
                     j.index_c++;
-                    j.key_c = j.C->at(j.index_c).first;
+                    j.key_c = j.col_ind.at(j.index_c);
                     Hc.push(j);
                 }
             }
 
         }
-        if (i.index_s < i.S->size() - 1) {
+        if (i.index_s < i.row_id->size() - 1) {
             i.index_s++;
-            i.key_s = i.S->at(i.index_s);
+            i.key_s = i.row_id->at(i.index_s);
             Hr.push(i);
         }
         
@@ -471,7 +473,7 @@ csr_matrix* mult(Biclique* a, Biclique* b) //bxb
         
     }*/
     
-    std::cout << "edges computed: " << csr_res->values.size() << std::endl;
+    //std::cout << "edges computed: " << csr_res->values.size() << std::endl;
     return csr_res;
 }
 
