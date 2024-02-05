@@ -34,7 +34,7 @@ int main(int argc, char const *argv[])
         auto res = mat_pow(&m, &b);
         TIMERSTOP(TIME_POW_BICLIQUES);
         //res->get_csr()->print();
-        //res->saveTxt("res.txt");
+        res->saveTxt("res.txt");
         delete res; 
     }
 

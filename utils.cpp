@@ -71,4 +71,28 @@ namespace utils
         }
         return false;
     }
+
+    template <typename T>
+    std::vector<T>* joinVectors(std::vector<std::vector<T>> vecs)
+    {
+        std::vector<T>* res = new std::vector<T>();
+        std::vector<uint32_t> index(vecs.size(), 0);
+        uint32_t count = vecs.size();
+        while (count) {
+            T min = vecs.at(0).at(index[0]); 
+            uint32_t ind = 0;
+
+            for (size_t i = 1; i < vecs.size(); i++) {
+                if (vecs.at(i).at(index[i]) < min) {
+                    min = vecs.at(i).at(index[i]);
+                    ind = i; 
+                }
+            }
+            res->push_back(min);
+            if (index[ind] < vecs.at(ind).size() - 1) index[ind]++;
+            else count--;
+            
+        }
+        return res;
+    }
 }

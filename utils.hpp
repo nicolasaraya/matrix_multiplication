@@ -25,6 +25,9 @@ namespace utils
     std::unordered_map<std::string, std::string> parseArguments(int argc, char const *argv[], std::unordered_map<std::string, std::string> *);
     std::string modify_path(std::string old_path, int n,std::string text);
     bool validateExtension(std::string, std::string);
+    
+    template <typename T>
+    std::vector<T>* joinVectors(std::vector<std::vector<T>> vecs);
 };
 
 

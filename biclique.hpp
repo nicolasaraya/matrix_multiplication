@@ -7,7 +7,7 @@
 #include <cassert>
 #include <fstream>
 #include <set>
-#include <unordered_map>
+#include <map>
 
 #include <matrix.hpp>
 #include <utils.hpp>
@@ -106,6 +106,8 @@ class Biclique {
         void print_csc();
         std::vector<csr_biclique*>* get_csr();
         std::vector<csc_biclique*>* get_csc();
+        std::vector<std::pair<uint32_t, std::vector<uint32_t>>>* get_marks();
+        std::vector<uint32_t>* get_indexes(uint32_t);
         //void set_csr(csr_biclique* mat);
         //void set_csc(csc_biclique* mat);
         void delete_csr();
@@ -118,13 +120,15 @@ class Biclique {
         std::string path = "";
         std::vector<csr_biclique*>* csr = nullptr;
         std::vector<csc_biclique*>* csc = nullptr;
+        std::vector<std::pair<uint32_t, std::vector<uint32_t>>>* marks;
         //csr_biclique* csr = nullptr;
         //csc_biclique* csc = nullptr; 
         uint64_t num_edges = 0;
         //uint32_t max_edges = 0;
         uint32_t max_col = 0;
         uint32_t max_row = 0; 
-
+        
+        uint32_t binary_search (uint32_t, uint32_t, uint32_t);
 };
 
 

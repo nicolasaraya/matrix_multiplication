@@ -245,12 +245,10 @@ csr_matrix* mult(csc_matrix* A, Biclique* b)
 
 csr_matrix* mult(Biclique* b, csr_matrix* A) //bxA
 {
+    
     assert(A != nullptr and b != nullptr);
-
     auto b_csc = b->get_csc();
-
-    auto csr_res = new csr_matrix();
-    //csr_res->row_ptr.push_back(0);
+    auto b_marks = b->get_marks();
 
     std::vector<uint32_t> index(b->maxDim() + 1, UINT32_MAX);
     for (size_t i = 0; i < A->row_id.size(); i++) {
@@ -258,10 +256,7 @@ csr_matrix* mult(Biclique* b, csr_matrix* A) //bxA
         index[A->row_id[i]] = i;
     }
 
-    //std::vector<Res_bic> res;
-    std::priority_queue<Inters_Bicl, std::vector<Inters_Bicl>, Inters_Bicl::comp_row> Hr;
-    std::priority_queue<Inters_Bicl, std::vector<Inters_Bicl>, Inters_Bicl::comp_col> Hc;
-
+    std::vector<Inters_Bicl> intersections; 
     
     for (size_t i = 0; i < b_csc->size(); i++) { 
         //std::priority_queue<std::pair<uint32_t, uint32_t>, std::vector<std::pair<uint32_t, uint32_t>>, decltype(min_heap_comp)> heap(min_heap_comp);
@@ -269,83 +264,73 @@ csr_matrix* mult(Biclique* b, csr_matrix* A) //bxA
         auto C_i = &(b_csc->at(i)->row_ind);
         auto Cv_i = &(b_csc->at(i)->values);
 
+        Inters_Bicl p;
+        p.S = C_i;
+        //std::priority_queue<std::pair<uint32_t, uint32_t>, std::vector<std::pair<uint32_t, uint32_t>>, Inters_Bicl::comparator> C_temp;
+        std::vector<std::pair<uint32_t, uint32_t>> C_temp;
+
+        size_t count = 0;
+
         for (size_t j = 0; j < S_i->size(); j++) { 
             size_t ind = S_i->at(j);
             if (index[ind] != UINT32_MAX) {
                 size_t start_row = A->row_ptr[index[ind]];
                 size_t end_row = A->row_ptr[index[ind] + 1];
-                //std::cout << "find: " << ind  << ", "<< index[ind] <<  ", startrow: " << start_row << ", endrow: " << end_row <<std::endl;
-                Inters_Bicl p;
-                p.row_id = C_i;
                 for (size_t k = start_row; k < end_row; k++) {
-                    //heap.push(std::pair(A->col_ind[k], A->values[k] * Cv_i->at(j)));
-                    //p.C->push_back(std::pair(A->col_ind[k], A->values[k] * Cv_i->at(j)));
-                    p.col_ind.push_back(A->col_ind[k]);
-                    p.values.push_back(A->values[k] * Cv_i->at(j)); 
-
+                    C_temp.push_back(std::pair(A->col_ind[k], A->values[k] * Cv_i->at(j)));
                 }
-                p.key_s = p.row_id->front();
-                p.key_c = p.col_ind.front();
-                Hr.push(p);
-                //res.push_back(p);
-                
+                count++;
             }        
         }
-        
+
+        if (count > 1){
+            std::sort(C_temp.begin(), C_temp.end());
+            for (auto k : C_temp) {
+                if (p.C.empty() or p.C.back().first != k.first) {
+                    p.C.push_back(k);
+                } else {
+                    p.C.back().second += k.second;
+                }
+            }
+        } else {
+            p.C = C_temp;
+        }
+        intersections.push_back(p);
+
     }
     index.clear();
 
-    //std::cout << "inters: " << Hr.size() << std::endl;
-    
-    //std::priority_queue<Res_bic, std::vector<Res_bic>, decltype(&Res_bic::comp_row)> Hr(res.begin(), res.end(), &Res_bic::comp_row);
-    //res.clear();
-    //TIMERSTART(WHILE);
-    //uint32_t count = 0;
-    while (not Hr.empty()) {
-        auto i = Hr.top();
-        Hr.pop();
-        Hc.push(i);
-        //res.push_back(i);
-        if (Hr.empty() or (Hr.top().key_s != i.key_s)) {
-            //std::cout << "size: " <<  Hc.size() << std::endl;
-            //res.clear();
-            uint32_t sum = 0;
-            //count++;
-            while (not Hc.empty()) {
-                auto j = Hc.top();
-                Hc.pop();
-                sum += j.values.at(j.index_c);
+    auto csr_res = new csr_matrix();
 
-                if (Hc.empty() or j.key_c != Hc.top().key_c) {
-                    csr_res->values.push_back(sum);
-                    csr_res->col_ind.push_back(j.col_ind.at(j.index_c));
+    for (auto i : *b_marks) {
+        csr_res->row_ptr.push_back(csr_res->col_ind.size());
+        csr_res->row_id.push_back(i.first);
 
-                    if (csr_res->row_id.empty() or (csr_res->row_id.back() != j.key_s)) {
-                        csr_res->row_id.push_back(j.key_s);
-                        csr_res->row_ptr.push_back(csr_res->col_ind.size()-1);
-                    }
-                    sum = 0;
-                }
-                if (j.index_c < j.col_ind.size() - 1) {
-                    j.index_c++;
-                    j.key_c = j.col_ind.at(j.index_c);
-                    Hc.push(j);
-                }
+        std::vector<std::pair<uint32_t,uint32_t>> C_temp;
+
+        for (auto j : i.second) {
+            for (auto k : intersections.at(j).C) {
+                C_temp.push_back(k);
             }
+        }
 
+        if (i.second.size() > 0) std::sort(C_temp.begin(), C_temp.end());
+
+        for (auto j : C_temp) {
+            if (csr_res->col_ind.empty() or csr_res->col_ind.size() == csr_res->row_ptr.back() or csr_res->col_ind.back() != j.first) {
+                csr_res->col_ind.push_back(j.first);
+                csr_res->values.push_back(j.second);
+            } else {
+                csr_res->values.back() += j.second;
+            }
         }
-        if (i.index_s < i.row_id->size() - 1) {
-            i.index_s++;
-            i.key_s = i.row_id->at(i.index_s);
-            Hr.push(i);
-        }
-        
+
     }
-    csr_res->row_ptr.push_back(csr_res->col_ind.size()); 
-    //TIMERSTOP(WHILE);
-    //std::cout << "count: " <<  count << std::endl;
-    //std::cout << "edges computed: " << csr_res->values.size() << std::endl;
 
+
+
+    csr_res->row_ptr.push_back(csr_res->col_ind.size()); 
+    //csr_res->print();
     return csr_res;
 }
 
@@ -355,125 +340,72 @@ csr_matrix* mult(Biclique* a, Biclique* b) //bxb
     assert(a != nullptr and b != nullptr);
     auto a_csc = a->get_csc();
     auto b_csr = b->get_csr();
+    auto a_marks = a->get_marks();
 
-
-
-    std::vector<std::vector<uint32_t>> h(a->maxDim()+1, std::vector<uint32_t>());
-
-    for (size_t i = 0; i < b_csr->size(); i++) {
-        for (size_t j = 0; j < b_csr->at(i)->row_id.size(); j++) {
-            if (b_csr->at(i)->row_id.at(j) > a->maxDim()) break;
-            h[b_csr->at(i)->row_id.at(j)].push_back(i);
-        }
-    }
-    
-
-    //std::vector<Res_bic> res;
-
-    std::priority_queue<Inters_Bicl, std::vector<Inters_Bicl>, Inters_Bicl::comp_row> Hr;
-    std::priority_queue<Inters_Bicl, std::vector<Inters_Bicl>, Inters_Bicl::comp_col> Hc;
+    std::vector<Inters_Bicl> intersections; 
 
     for (size_t i = 0; i < a_csc->size(); i++) {
-        auto csc = a_csc->at(i);
-        for (size_t j = 0; j < csc->col_id.size(); j++) {
-            if (not h[csc->col_id[j]].empty()) {
-                for (auto index_csr : h[csc->col_id[j]]) {
-                    Inters_Bicl p;
-                    p.row_id = &(csc->row_ind);
-                    p.key_s = p.row_id->front();
-                    //p.C = new std::vector<std::pair<uint32_t,uint32_t>>();
-
-                    for(size_t row = 0; row < b_csr->at(index_csr)->col_ind.size(); row++){
-                        //p.C->push_back(std::pair(b_csr->at(index_csr)->col_ind.at(row),weight * b_csr->at(index_csr)->values.at(row)));
-                        p.col_ind.push_back(b_csr->at(index_csr)->col_ind.at(row));
-                        p.values.push_back(csc->values[j] *  b_csr->at(index_csr)->values.at(row));
-                    }
-                    p.key_c = p.col_ind.front();
-                    Hr.push(p);
-                    //res.push_back(p);
+        Inters_Bicl p;
+        std::vector<std::pair<uint32_t,uint32_t>> C_temp;
+        p.S= &(a_csc->at(i)->col_id);
+        size_t count = 0;
+        for (size_t j = 0; j < a_csc->at(i)->col_id.size(); j++) {
+            auto index_to_inter = b->get_indexes(a_csc->at(i)->col_id.at(j));
+            if (index_to_inter == nullptr)  continue;
+            for (auto index_b : (*index_to_inter)){
+                for (size_t k = 0; k < b_csr->at(index_b)->col_ind.size(); k++) {
+                    C_temp.push_back(std::pair(b_csr->at(index_b)->col_ind.at(k), b_csr->at(index_b)->values.at(k) * a_csc->at(i)->values.at(j)));
                 }
             }
-
+            count++;
         }
+        if (count > 1) {
+            std::sort(C_temp.begin(), C_temp.end());
+            for (auto k : C_temp) {
+                //std::cout << C_temp.top().first << "," << C_temp.top().second << std::endl;
+                if (p.C.empty() or p.C.back().first != k.first) {
+                    p.C.push_back(k);
+                } else {
+                    p.C.back().second += k.second;
+                }
+            }
+        } else {
+            p.C = C_temp;
+        }
+
+        intersections.push_back(p);
     }
-    h.clear();
+
+
     auto csr_res = new csr_matrix();
 
-    //std::cout << "inters: " << Hr.size() << std::endl;
-  
-    while (not Hr.empty()) {
-        auto i = Hr.top();
-        Hr.pop();
-        Hc.push(i);
+    for (auto i : *a_marks) {
+        csr_res->row_ptr.push_back(csr_res->col_ind.size());
+        csr_res->row_id.push_back(i.first);
 
-        if (Hr.empty() or (Hr.top().key_s != i.key_s)) {
-            uint32_t sum = 0;
-            while (not Hc.empty()) {
-                auto j = Hc.top();
-                Hc.pop();
-                sum += j.values.at(j.index_c);
+        std::vector<std::pair<uint32_t,uint32_t>> C_temp;
 
-                if (Hc.empty() or j.key_c != Hc.top().key_c) {
-                    csr_res->values.push_back(sum);
-                    csr_res->col_ind.push_back(j.col_ind.at(j.index_c));
-
-                    if (csr_res->row_id.empty() or (csr_res->row_id.back() != j.key_s)) {
-                        csr_res->row_id.push_back(j.key_s);
-                        csr_res->row_ptr.push_back(csr_res->col_ind.size()-1);
-                    }
-                    sum = 0;
-                }
-                if (j.index_c < j.col_ind.size() - 1) {
-                    j.index_c++;
-                    j.key_c = j.col_ind.at(j.index_c);
-                    Hc.push(j);
-                }
+        for (auto j : i.second) {
+            for (auto k : intersections.at(j).C) {
+                C_temp.push_back(k);
             }
+        }
+        if (i.second.size() > 0)  std::sort(C_temp.begin(), C_temp.end());
 
+        for (auto j : C_temp) {
+            if (csr_res->col_ind.empty() or csr_res->col_ind.size() == csr_res->row_ptr.back() or csr_res->col_ind.back() != j.first) {
+                csr_res->col_ind.push_back(j.first);
+                csr_res->values.push_back(j.second);
+            } else {
+                csr_res->values.back() += j.second;
+            }
         }
-        if (i.index_s < i.row_id->size() - 1) {
-            i.index_s++;
-            i.key_s = i.row_id->at(i.index_s);
-            Hr.push(i);
-        }
-        
     }
+
+
+
     csr_res->row_ptr.push_back(csr_res->col_ind.size()); 
-
-    /* 1 heap
-    uint32_t sum = 0;
-    while (not Hr.empty()) {
-        auto i = Hr.top();
-        Hr.pop();
-
-        sum += i.C->at(i.index_c).second;
-
-        if (Hr.empty() or i.key_s != Hr.top().key_s or i.key_c != Hr.top().key_c) {
-            csr_res->values.push_back(sum);
-            csr_res->col_ind.push_back(i.C->at(i.index_c).first);
-
-            if (csr_res->row_id.empty() or (csr_res->row_id.back() != i.key_s)) {
-                csr_res->row_id.push_back(i.key_s);
-                csr_res->row_ptr.push_back(csr_res->col_ind.size()-1);
-            }
-            sum = 0;
-        }
-
-        if (i.index_c < i.C->size() - 1) {
-            i.index_c++;
-            i.key_c = i.C->at(i.index_c).first;
-            Hr.push(i);
-        } else if (i.index_s < i.S->size() - 1) {
-            i.index_s++;
-            i.key_s = i.S->at(i.index_s);
-            i.index_c = 0;
-            i.key_c = i.C->at(i.index_c).first;
-            Hr.push(i);
-        }
-        
-    }*/
-    
-    //std::cout << "edges computed: " << csr_res->values.size() << std::endl;
+    //csr_res->print();
     return csr_res;
 }
 

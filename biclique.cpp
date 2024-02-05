@@ -7,6 +7,7 @@ Biclique::Biclique(std::string path)
     setFile(path);
     csr = new std::vector<csr_biclique*>();
     csc = new std::vector<csc_biclique*>();
+    marks = new std::vector<std::pair<uint32_t, std::vector<uint32_t>>>();
     make_csr();
     make_csc();
 }
@@ -21,6 +22,7 @@ Biclique::~Biclique()
         delete_csr();
         delete csr;
     }
+    delete marks;
 }
 
 void Biclique::setFile(std::string path)
@@ -38,6 +40,8 @@ void Biclique::make_csr()
 
     std::string s;
 
+    std::map<uint32_t, std::vector<uint32_t>> tempMark;
+
 	while (getline(file, s)) {
         auto b = new csr_biclique();
         csr->push_back(b);
@@ -48,6 +52,7 @@ void Biclique::make_csr()
 
         for (size_t i = 0; i < S.size(); i++) {
             b->row_id.push_back(atoll(S[i].c_str()));
+            tempMark[b->row_id.back()].push_back(csr->size()-1);
         }
         for (size_t i = 0; i < C.size(); i++) {
             auto temp = C[i];
@@ -61,9 +66,11 @@ void Biclique::make_csr()
         num_edges += C.size() * S.size();;
 
 	}
-
-	
 	file.close();
+
+    for (auto i : tempMark) {
+        marks->emplace_back(i.first, i.second);
+    }
 
     std::cout << "edges in bicliques: " << num_edges << std::endl;
 
@@ -179,6 +186,39 @@ std::vector<csr_biclique*>* Biclique::get_csr()
 std::vector<csc_biclique*>* Biclique::get_csc()
 {
     return csc;
+}
+
+std::vector<std::pair<uint32_t, std::vector<uint32_t>>>* Biclique::get_marks()
+{
+    return marks;
+}
+
+std::vector<uint32_t>* Biclique::get_indexes(uint32_t id)
+{
+    auto search = binary_search(0, marks->size() - 1, id);
+    if (search != UINT32_MAX) {
+        return &(marks->at(search).second);
+    }
+    return nullptr;
+}
+
+uint32_t Biclique::binary_search (uint32_t l, uint32_t r, uint32_t id) 
+{
+    if (r >= l) {
+        uint32_t mid = l + (r - l) / 2;
+
+        if (marks->at(mid).first == id){
+            return mid;
+		}
+        if (marks->at(mid).first > id){
+			if(mid == 0){
+				return UINT32_MAX;
+			}
+            return binary_search(l, mid - 1, id);
+		}
+        return binary_search(mid + 1, r, id);
+    }
+    return UINT32_MAX;
 }
 
 void Biclique::delete_csr()
