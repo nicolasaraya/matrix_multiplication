@@ -39,6 +39,7 @@ csr_matrix* Matrix::make_csr()
 	while (getline(file, s)) {
         //std::cout << s << std::endl;
         auto values = utils::splitString(s, " ");
+        if (values.size() <= 1) continue;
 
         csr->values.push_back(atoi(values[2].c_str()));
         csr->col_ind.push_back(atoi(values[1].c_str()));
