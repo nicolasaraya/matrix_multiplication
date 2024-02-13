@@ -1,23 +1,23 @@
 OBJS	=   	main.o \
-				matrix.o \
-				multiplicator.o \
+				matrix_boolean.o \
+				multiplicator_boolean.o \
 				utils.o \
-				biclique.o \
+				biclique_boolean.o \
 
 SOURCE	=       main.cpp \
-				matrix.cpp \
-				multiplicator.cpp \
+				matrix_boolean.cpp \
+				multiplicator_boolean.cpp \
 				utils.cpp \
-				biclique.cpp \
+				biclique_boolean.cpp \
 
-HEADER	=       matrix.hpp \
-				multiplicator.hpp \
+HEADER	=       matrix_boolean.hpp \
+				multiplicator_boolean.hpp \
 				utils.hpp \
-				biclique.hpp \
+				biclique_boolean.hpp \
 
 OUT	=           matrix_multiplicator
 CC	 =          g++
-FLAGS =         -c  -std=c++20 -I.
+FLAGS =         -c  -std=c++20 -I. -I..
 DEBUG_FLAGS =	-O0 -g -Wall
 OPT = 			-O3
 LFLAGS	=       -lm                                                                                                                                    
@@ -37,16 +37,16 @@ all: $(OBJS)
 main.o: main.cpp
 	$(CC) $(FLAGS) main.cpp 
 
-matrix.o: matrix.cpp
-	$(CC) $(FLAGS) matrix.cpp
+matrix_boolean.o: matrix_boolean.cpp
+	$(CC) $(FLAGS) matrix_boolean.cpp
 
-multiplicator.o: multiplicator.cpp
-	$(CC) $(FLAGS) multiplicator.cpp
+multiplicator_boolean.o: multiplicator_boolean.cpp
+	$(CC) $(FLAGS) multiplicator_boolean.cpp
 
-utils.o: utils.cpp
-	$(CC) $(FLAGS) utils.cpp
+utils.o: ../utils.cpp
+	$(CC) $(FLAGS) ../utils.cpp
 
-biclique.o: biclique.cpp
-	$(CC) $(FLAGS) biclique.cpp
+biclique_boolean.o: biclique_boolean.cpp
+	$(CC) $(FLAGS) biclique_boolean.cpp
 clean:
 	rm -f $(OBJS) $(OBJS_CHECKER) $(OUT)
