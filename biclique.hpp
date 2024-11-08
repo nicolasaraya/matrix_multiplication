@@ -12,6 +12,8 @@
 #include <matrix.hpp>
 #include <utils.hpp>
 
+//#include <../biclique_extraction/Graph/Biclique.hpp>
+
 namespace weighted 
 {
   struct csr_biclique 
@@ -65,6 +67,7 @@ namespace weighted
   class Biclique {
     public:
       Biclique();
+      //Biclique(BicliquePtr bicl);
       Biclique(std::string path);
       ~Biclique();
       void setFile(std::string path);

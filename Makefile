@@ -16,6 +16,9 @@ SOURCE	=	main.cpp \
 					boolean/biclique_boolean.cpp \
 					boolean/matrix_boolean.cpp \
 					boolean/multiplicator_boolean.cpp \
+					\
+					../biclique_extraction/Utils/Utils.cpp \
+					../biclique_extraction/Graph/Node.cpp \
 
 HEADER	=	matrix.hpp \
 					multiplicator.hpp \
@@ -24,23 +27,35 @@ HEADER	=	matrix.hpp \
 					boolean/biclique_boolean.hpp \
 					boolean/matrix_boolean.hpp \
 					boolean/multiplicator_boolean.hpp \
+					\
+					../biclique_extraction/Utils/Utils.hpp \
+					../biclique_extraction/Graph/Biclique.hpp \
+					../biclique_extraction/Graph/Node.hpp \
 
 OBJ_FOLD = build
+
+debug_level ?= 0
+
+BE_PATH = ../biclique_extraction
+REPO_URL = https://github.com/nicolasaraya/biclique_extraction.git
 
 OUT	=           matrix_multiplicator
 OUT_DEBUG =			matrix_multiplicator-g
 CC	 =          g++
-FLAGS =         -c  -std=c++20 -I. -I./boolean
+FLAGS =         -c  -std=c++20 -I. -Iboolean -I${BE_PATH} -I${BE_PATH}/Graph -I${BE_PATH}/Utils -DDEBUG_LEVEL=$(debug_level)
 DEBUG_FLAGS =		-O0 -g -Wall
 OPT = 					-O3
-LFLAGS	=       -lm                                                                                                                                    
+LFLAGS	=       -lm
 
 # Si la variable DEBUG está definida, agrega las DEBUG_FLAGS
 ifdef debug
-FLAGS := $(FLAGS) $(DEBUG_FLAGS)
+FLAGS += $(DEBUG_FLAGS)
 else
 FLAGS += $(OPT) # Si no se define DEBUG, se agregan las banderas de optimización
 endif
+
+
+# Objetivo para verificar y clonar la carpeta si no existe
 
 all: 
 	mkdir -p $(OBJ_FOLD)
@@ -75,6 +90,14 @@ matrix_boolean.o: boolean/matrix_boolean.cpp
 
 multiplicator_boolean.o: boolean/multiplicator_boolean.cpp
 	$(CC) $(FLAGS) boolean/multiplicator_boolean.cpp -o $(OBJ_FOLD)/multiplicator_boolean.o
+
+config:
+	@if [ ! -d "$(BE_PATH)" ]; then \
+		echo "Biclique Extractor not found, Cloning..."; \
+		git clone $(REPO_URL) $(FOLDER_PATH); \
+	else \
+		echo "Biclique Extractor founded."; \
+	fi
 
 clean:
 	rm -rf $(OBJS) $(OBJS_CHECKER) $(OUT) $(OUT_DEBUG) $(OBJ_FOLD) 
