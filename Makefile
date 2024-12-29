@@ -42,9 +42,9 @@ REPO_URL = https://github.com/nicolasaraya/biclique_extraction.git
 OUT	=           matrix_multiplicator
 OUT_DEBUG =			matrix_multiplicator-g
 CC	 =          g++
-FLAGS =         -c  -std=c++20 -I. -Iboolean -I${BE_PATH} -I${BE_PATH}/Graph -I${BE_PATH}/Utils -DDEBUG_LEVEL=$(debug_level)
+FLAGS =         -c  -std=c++17 -I. -Iboolean -I${BE_PATH} -I${BE_PATH}/Graph -I${BE_PATH}/Utils -DDEBUG_LEVEL=$(debug_level)
 DEBUG_FLAGS =		-O0 -g -Wall
-OPT = 					-O3
+OPT = 					-Ofast
 LFLAGS	=       -lm
 
 # Si la variable DEBUG está definida, agrega las DEBUG_FLAGS

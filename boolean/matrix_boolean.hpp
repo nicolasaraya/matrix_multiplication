@@ -16,8 +16,15 @@ namespace boolean
     std::vector<uint32_t> col_ind;
     std::vector<uint32_t> row_ptr;
     std::vector<uint32_t> row_id;
-
     uint32_t max_row = 0;
+
+    csr_matrix() = default;
+    csr_matrix(uint32_t nrows, uint32_t ncols) 
+    {
+      col_ind.reserve(ncols + 1); 
+      row_ptr.reserve(ncols + 1);
+      row_id.reserve(nrows + 1);
+    }
 
     void print()
     {

@@ -17,10 +17,10 @@ HEADER	=       matrix_boolean.hpp \
 
 OUT	=           matrix_multiplicator
 CC	 =          g++
-FLAGS =         -c  -std=c++20 -I. -I..
+FLAGS =         -c  -std=c++17 -I. -I..
 DEBUG_FLAGS =	-O0 -g -Wall
-OPT = 			-O3
-LFLAGS	=       -lm                                                                                                                                    
+OPT = 			-Ofast
+LFLAGS	=      # -lm                                                                                                                                    
 
 				
 

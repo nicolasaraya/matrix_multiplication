@@ -8,7 +8,9 @@ int main(int argc, char const *argv[])
     auto b = new boolean::Matrix(argv[1]);
     TIMERSTOP(BUILD);
 
-    //b->get_csr();
+
+    //b->get_csr()->print();
+    //b->get_csc()->print();
 
     TIMERSTART(POW);
     auto res = boolean::mat_mult(b,b);
