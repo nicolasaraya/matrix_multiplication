@@ -115,12 +115,16 @@ namespace boolean
 
 	void Matrix::delete_csr()
 	{
-		if (csr != nullptr) delete csr;
+		if (csr) {
+      delete csr;
+    } 
 	}
 
 	void Matrix::delete_csc()
 	{
-		if (csc != nullptr) delete csc; 
+		if (csc) {
+      delete csc;
+    }
 	}
 
 	void Matrix::saveTxt()
@@ -147,8 +151,4 @@ namespace boolean
 		}
 		file.close();
 	}
-
-
-
-	
 };

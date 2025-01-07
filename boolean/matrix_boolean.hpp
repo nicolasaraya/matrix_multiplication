@@ -19,6 +19,7 @@ namespace boolean
     uint32_t max_row = 0;
 
     csr_matrix() = default;
+    
     csr_matrix(uint32_t nrows, uint32_t ncols) 
     {
       col_ind.reserve(ncols + 1); 

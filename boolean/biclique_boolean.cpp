@@ -71,7 +71,7 @@ namespace boolean
         temp.pop_back();
         auto sp = utils::splitString(temp, ",");
         b->col_ind.push_back(atoll(sp[0].c_str()));
-        b->values.push_back(atoll(sp[1].c_str()));
+        //b->values.push_back(atoll(sp[1].c_str()));
       }
       if (max_row < b->row_id.back()) max_row = b->row_id.back();
       num_edges += C.size() * S.size();;
@@ -102,7 +102,7 @@ namespace boolean
     for (auto i : *csr) {
       auto b = new csc_biclique();
       csc->push_back(b);
-      b->values = i->values;
+      //b->values = i->values;
       b->row_ind = i->row_id;
       b->col_id = i->col_ind;
 
@@ -174,7 +174,7 @@ namespace boolean
 
   void Biclique::delete_csr()
   {
-    for(auto it : *csr) {
+    for (auto it : *csr) {
       delete it;
     }
     delete csr;
@@ -211,5 +211,4 @@ namespace boolean
     }
     return max_row;
   }
-
 };

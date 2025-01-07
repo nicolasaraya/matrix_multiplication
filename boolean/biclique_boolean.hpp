@@ -10,16 +10,16 @@ namespace boolean
 {
   struct csr_biclique 
   {
-    std::vector<int32_t> values; 
+    //std::vector<int32_t> values; 
     std::vector<uint32_t> col_ind;
     std::vector<uint32_t> row_id;
 
     void print()
     {
-      std::cout << "values: ";
-      for (auto i : values) {
-        std::cout << i << " "; 
-      } 
+      // std::cout << "values: ";
+      // for (auto i : values) {
+      //   std::cout << i << " "; 
+      // } 
       std::cout << std::endl << "col_ind: ";
       for (auto i : col_ind) {
         std::cout << i << " ";
@@ -34,16 +34,16 @@ namespace boolean
 
   struct csc_biclique
   {
-    std::vector<int32_t> values; 
+    //std::vector<int32_t> values; 
     std::vector<uint32_t> row_ind; 
     std::vector<uint32_t> col_id;
 
     void print()
     {
-      std::cout << "values: ";
-      for (auto i : values) {
-        std::cout << i << " "; 
-      }
+      // std::cout << "values: ";
+      // for (auto i : values) {
+      //   std::cout << i << " "; 
+      // }
       std::cout << std::endl << "row_ind: ";
       for (auto i : row_ind) {
         std::cout << i << " ";
