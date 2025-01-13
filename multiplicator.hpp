@@ -27,7 +27,12 @@ namespace weighted
       bool operator()(const Intersection& a, const Intersection& b) const {
         return a.value_col > b.value_col;
       }
+      bool operator()(const Intersection* a, const Intersection* b) const {
+        return a->value_col > b->value_col;
+      }
     };
+
+    
 
     // Definir el operador de comparación para la segunda cola
     struct Row_Comp 
@@ -35,10 +40,14 @@ namespace weighted
       bool operator()(const Intersection& a, const Intersection& b) const {
         return a.value_row > b.value_row;
       }
+      bool operator()(const Intersection* a, const Intersection* b) const {
+        return a->value_row > b->value_row;
+      }
     };
   };
 
-
+  typedef std::priority_queue<Intersection*, std::vector<Intersection*>, Intersection::Col_Comp> PQ_Col;
+  typedef std::priority_queue<Intersection*, std::vector<Intersection*>, Intersection::Row_Comp> PQ_Row;
 
   struct Inters_Bicl {
     struct comparator
@@ -56,8 +65,6 @@ namespace weighted
 
     std::vector<uint32_t>* S; // S 
     std::vector<std::pair<uint32_t,uint32_t>> C;
-
-    
   };
 
 

@@ -5,3 +5,5 @@
 *.out
 .vscode
 matrix_multiplicator
+biclique_extraction/
+include

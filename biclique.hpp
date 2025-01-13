@@ -10,7 +10,7 @@
 #include <map>
 
 #include <matrix.hpp>
-#include <utils.hpp>
+#include <include/Utils/Utils.hpp>
 
 //#include <../biclique_extraction/Graph/Biclique.hpp>
 

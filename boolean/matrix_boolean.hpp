@@ -7,7 +7,8 @@
 #include <fstream>
 #include <cassert>
 
-#include <utils.hpp>
+//#include <../../biclique_extraction/Utils/Utils.hpp>
+#include <include/Utils/Utils.hpp>
 
 namespace boolean
 {

@@ -70,7 +70,6 @@ namespace boolean
       
 		};
 
-		// Definir el operador de comparación para la segunda cola
 		struct Row_Comp 
 		{
 			bool operator()(const Intersection& a, const Intersection& b) const 
@@ -87,22 +86,20 @@ namespace boolean
   typedef std::priority_queue<Intersection*, std::vector<Intersection*>, Intersection::Col_Comp> PQ_Col;
   typedef std::priority_queue<Intersection*, std::vector<Intersection*>, Intersection::Row_Comp> PQ_Row;
 
-  // struct Inters_Bicl {
-  //   struct Bicl_Comp
-  //   {
-  //     bool operator()(const uint32_t& a, const uint32_t& b) const {
-  //       if (a != b) {
-  //         // Ordenar por el primer índice de menor a mayor
-  //         return a > b;
-  //       } else {
-  //         // En caso de empate, sumar los segundos índices
-  //         return a > b;
-  //       }
-  //     }
-  //   };
-  //   std::vector<uint32_t>* S; // S 
-  //   std::vector<uint32_t, uint32_t> C;
-  // };
+  struct Inters_Bicl {
+    // struct Bicl_Comp
+    // {
+    //   bool operator()(const uint32_t& a, const uint32_t& b) const {
+    //     if (a != b) {
+    //       return a > b;
+    //     } else {
+    //       return a > b;
+    //     }
+    //   }
+    // };
+    std::vector<uint32_t>* S; // S 
+    std::vector<uint32_t> C;
+  };
 
   // struct PQ_Row
   // {

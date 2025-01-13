@@ -9,8 +9,7 @@
 #include <set>
 #include <unordered_map>
 
-#include <utils.hpp>
-
+#include <include/Utils/Utils.hpp>
 
 namespace weighted
 {
