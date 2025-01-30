@@ -5,7 +5,7 @@
 int main(int argc, char const *argv[])
 {
     TIMERSTART(BUILD);
-    auto b = new boolean::Matrix(argv[1]);
+    auto b = new Boolean::Matrix(argv[1]);
     TIMERSTOP(BUILD);
 
 
@@ -13,7 +13,7 @@ int main(int argc, char const *argv[])
     //b->get_csc()->print();
 
     TIMERSTART(POW);
-    auto res = boolean::mat_mult(b,b);
+    auto res = Boolean::mat_mult(b,b);
     TIMERSTOP(POW);
     //res->get_csr()->print();
     res->saveTxt("res.txt");

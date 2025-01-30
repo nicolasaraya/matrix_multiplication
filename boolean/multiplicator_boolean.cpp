@@ -3,7 +3,7 @@
 #include <algorithm>
 #include <include/Utils/DebugSystem.hpp>
 
-namespace boolean 
+namespace Boolean 
 {
 	Matrix* mat_mult(Matrix* A, Matrix* B)
 	{

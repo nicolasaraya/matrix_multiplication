@@ -3,16 +3,13 @@
 
 namespace weighted
 {
-
-  Matrix::Matrix(){}
-
   Matrix::Matrix(std::string path, bool b_csr, bool b_csc)
   {
     setFile(path);
     if (b_csr) {
-      if(path.find(".txt" ) != std::string::npos) {
+      if (path.find(".txt" ) != std::string::npos) {
         make_csr();
-      } else if(path.find(".bin") != std::string::npos) {
+      } else if (path.find(".bin") != std::string::npos) {
         make_csr_bin();
       }
     }
@@ -81,7 +78,7 @@ namespace weighted
 
     while (not file.eof()) {
       file.read((char*)buffer, sizeof(int32_t));
-      if(*buffer < 0) {
+      if (*buffer < 0) {
         csr->row_id.push_back(-(*buffer));
         csr->row_ptr.push_back(csr->col_ind.size());
       } else {
@@ -163,12 +160,12 @@ namespace weighted
     return csc;
   }
 
-  csr_matrix *Matrix::get_csr()
+  csr_matrix* Matrix::get_csr()
   {
     return csr;
   }
 
-  csc_matrix *Matrix::get_csc()
+  csc_matrix* Matrix::get_csc()
   {
     return csc;
   }

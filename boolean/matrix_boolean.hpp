@@ -10,7 +10,7 @@
 //#include <../../biclique_extraction/Utils/Utils.hpp>
 #include <include/Utils/Utils.hpp>
 
-namespace boolean
+namespace Boolean
 {
   struct csr_matrix
   {

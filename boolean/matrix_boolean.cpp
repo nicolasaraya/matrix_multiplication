@@ -1,6 +1,6 @@
 #include <matrix_boolean.hpp>
 
-namespace boolean
+namespace Boolean
 {
 	Matrix::Matrix() {;}
 
