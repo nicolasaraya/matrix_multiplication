@@ -1,5 +1,5 @@
 #include <builder_boolean.hpp>
-#include <include/Graph/
+#include <include/Graph/Graph.hpp>
 
 namespace Boolean
 {
