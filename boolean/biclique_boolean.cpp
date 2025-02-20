@@ -1,5 +1,5 @@
 #include <biclique_boolean.hpp>
-#include <utils.hpp>
+#include <Utils.hpp>
 
 #include <string>
 #include <vector>
@@ -9,10 +9,8 @@
 #include <iostream>
 #include <cstdint>
 
-namespace boolean
+namespace Boolean
 {
-  Biclique::Biclique() {;}
-
   Biclique::Biclique(std::string path)
   {
     setFile(path);

@@ -10,7 +10,7 @@
 #include <queue>
 #include <cstring>
 
-namespace boolean
+namespace Boolean
 {
 	struct Intersection
 	{

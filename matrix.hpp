@@ -82,7 +82,7 @@ namespace weighted
 
   class Matrix {
     public:
-      Matrix();
+      Matrix() = default;
       Matrix(std::string path, bool b_csr, bool b_csc);
       Matrix(std::string path);
       ~Matrix();

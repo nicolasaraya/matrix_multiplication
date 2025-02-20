@@ -6,7 +6,7 @@
 #include <vector>
 #include <string>
 
-namespace boolean 
+namespace Boolean 
 {
   struct csr_biclique 
   {
@@ -59,7 +59,7 @@ namespace boolean
   class Biclique 
   {
     public:
-      Biclique();
+      Biclique() = default;
       Biclique(std::string path);
       ~Biclique();
       void setFile(std::string path);
@@ -87,7 +87,6 @@ namespace boolean
       uint64_t num_edges = 0;
       uint32_t max_col = 0;
       uint32_t max_row = 0; 
-
       uint32_t binary_search (uint32_t, uint32_t, uint32_t);
   };
 };
