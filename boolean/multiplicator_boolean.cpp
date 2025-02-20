@@ -18,40 +18,54 @@ namespace boolean
   {
     TIMERSTART(AXA);
     auto resAxB = mult(A->get_csc(), B->get_csr()); //AxB
-    //resAxB->print();
     TIMERSTOP(AXA);
     
     TIMERSTART(AXB);
     auto resAxBb = mult(A->get_csc(), Bb); //A X Bb
-    //resAxBb->print();
     TIMERSTOP(AXB);
+    std::cout << "AXB" << std::endl;
+    resAxBb->printAsList();
     
     TIMERSTART(APPEND);
     auto add = csr_add(resAxB, resAxBb);
     TIMERSTOP(APPEND);
+    std::cout << "add1" << std::endl;
+    add->printAsList();
+    
 
     delete resAxB;
     delete resAxBb;
 
     TIMERSTART(BXA);
     auto resAbxB = mult(Ab, B->get_csr());
-    //resAbxB->print();
     TIMERSTOP(BXA);
+    std::cout << "BXA" << std::endl;
+    resAbxB->printAsList();
     
     TIMERSTART(BXB);
     auto resAbxBb = mult(Ab, Bb); //Ab X Bb
-    //resAbxBb->print();
     TIMERSTOP(BXB);
+
+    std::cout << "BXB" << std::endl;
+    resAbxBb->printAsList();
 
     TIMERSTART(APPEND2);
     auto add2 = csr_add(resAbxB, resAbxBb);
     TIMERSTOP(APPEND2);
+
+    std::cout << "add2" << std::endl;
+    add2->printAsList();
+
     delete resAbxB;
     delete resAbxBb;
     
     TIMERSTART(APPEND3);
     auto add3 = csr_add(add, add2);
     TIMERSTOP(APPEND3);
+
+    std::cout << "add3" << std::endl;
+    add3->printAsList();
+
     delete add;
     delete add2;
     

@@ -6,6 +6,8 @@
 #include <cstdint>
 #include <fstream>
 #include <cassert>
+#include <sstream>
+
 
 //#include <../../biclique_extraction/Utils/Utils.hpp>
 #include <include/Utils/Utils.hpp>
@@ -43,6 +45,21 @@ namespace boolean
         std::cout << i << " ";
       } 
       std::cout << std::endl;
+    }
+
+    void printAsList()
+    {
+      for (size_t i = 0; i < row_id.size(); ++i) {
+        std::cout << row_id.at(i) << ":";
+        size_t start = row_ptr.at(i);
+        size_t stop = row_ptr.at(i+1);
+
+        while (start < stop) {
+          std::cout << " " << col_ind.at(start);
+          ++start;
+        }
+        std::cout << std::endl;
+      } 
     }
   };
 

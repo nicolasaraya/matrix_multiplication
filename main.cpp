@@ -1,6 +1,8 @@
 #include <matrix.hpp>
 #include <biclique.hpp>
 #include <multiplicator.hpp>
+#include <multiplicator_boolean.hpp>
+#include <matrix_boolean.hpp>
 
 #include <iostream>
 
@@ -11,6 +13,31 @@ int main(int argc, char const *argv[])
 
 	TIMERSTART(TOTAL);
 
+  if (argc == 2) {
+		TIMERSTART(BUILD);
+		boolean::Matrix m(argv[1]);
+		TIMERSTOP(BUILD);
+		TIMERSTART(TIME_POW);
+		auto res = boolean::mat_pow(&m);
+		TIMERSTOP(TIME_POW);
+		res->saveTxt("res.txt");
+		delete res; 
+	} else if (argc == 3) {
+		TIMERSTART(BUILD_MATRIX);
+		boolean::Matrix m(argv[1]);
+		TIMERSTOP(BUILD_MATRIX);
+		TIMERSTART(BUILD_BICLIQUES)
+		boolean::Biclique b(argv[2]);
+		TIMERSTOP(BUILD_BICLIQUES);
+		TIMERSTART(TIME_POW_BICLIQUES);
+		auto res = boolean::mat_pow(&m, &b);
+		TIMERSTOP(TIME_POW_BICLIQUES);
+		//res->get_csr()->print();
+		res->saveTxt("res.txt");
+		delete res; 
+	}
+
+  #if 0
 	if (argc == 2) {
 		TIMERSTART(BUILD);
 		weighted::Matrix m(argv[1], true, true);
@@ -34,6 +61,7 @@ int main(int argc, char const *argv[])
 		res->saveTxt("res.txt");
 		delete res; 
 	}
+  #endif
 
 	TIMERSTOP(TOTAL);
 

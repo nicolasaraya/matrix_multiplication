@@ -52,25 +52,28 @@ namespace boolean
     std::string s;
 
     std::map<uint32_t, std::vector<uint32_t>> tempMark;
+    getline(file, s); //skip first line
 
     while (getline(file, s)) {
       auto b = new csr_biclique();
       csr->push_back(b);
 
-      auto values = utils::splitString(s, ";");
-      auto S = utils::splitString(values[0], " ");
-      auto C = utils::splitString(values[1], " ");
+      //auto values = utils::splitString(s, ";");
+      s.erase(0, 1); //remove S 
+      s.erase(0, 1); //remove :
+      auto S = utils::splitString(s, " ");
+
+      getline(file, s);
+      s.erase(0, 1); //remove C 
+      s.erase(0, 1); //remove :
+      auto C = utils::splitString(s, " ");
 
       for (size_t i = 0; i < S.size(); i++) {
         b->row_id.push_back(atoll(S[i].c_str()));
         tempMark[b->row_id.back()].push_back(csr->size()-1);
       }
       for (size_t i = 0; i < C.size(); i++) {
-        auto temp = C[i];
-        temp.erase(temp.begin());
-        temp.pop_back();
-        auto sp = utils::splitString(temp, ",");
-        b->col_ind.push_back(atoll(sp[0].c_str()));
+        b->col_ind.push_back(atoll(C[i].c_str()));
         //b->values.push_back(atoll(sp[1].c_str()));
       }
       if (max_row < b->row_id.back()) max_row = b->row_id.back();
