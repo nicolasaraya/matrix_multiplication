@@ -154,7 +154,7 @@ namespace Boolean
     return nullptr;
   }
 
-  uint32_t Biclique::binary_search (uint32_t l, uint32_t r, uint32_t id) 
+  uint32_t Biclique::binary_search(uint32_t l, uint32_t r, uint32_t id) 
   {
     if (r >= l) {
       uint32_t mid = l + (r - l) / 2;
@@ -207,9 +207,6 @@ namespace Boolean
   }
 
   uint32_t Biclique::maxDim(){
-    if (max_col > max_row) {
-      return max_col;
-    }
-    return max_row;
+    return (max_col > max_row) ? max_col : max_row;
   }
 };

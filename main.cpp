@@ -3,34 +3,64 @@
 #include <multiplicator.hpp>
 #include <multiplicator_boolean.hpp>
 #include <matrix_boolean.hpp>
+#include <include/Utils/DebugSystem.hpp>
 
 #include <iostream>
 
 int main(int argc, char const *argv[])
 {
-
 	std::cout << "main" << std::endl;
-
 	TIMERSTART(TOTAL);
+
+  TIMERSTART(BUILD);
+  Boolean::Matrix m(argv[1]);
+  TIMERSTOP(BUILD);
+  TIMERSTART(BUILD2);
+  Boolean::Matrix m2(argv[2]);
+  TIMERSTOP(BUILD2);
+  TIMERSTART(TIME_MULT);
+  auto res = Boolean::mat_mult(&m, &m2);
+  TIMERSTOP(TIME_MULT);
+  res->saveTxt(argv[1] + std::string(".pow"));
+  delete res; 
+
+
+  return 0;
 
   if (argc == 2) {
 		TIMERSTART(BUILD);
-		boolean::Matrix m(argv[1]);
+		Boolean::Matrix m(argv[1]);
 		TIMERSTOP(BUILD);
 		TIMERSTART(TIME_POW);
-		auto res = boolean::mat_pow(&m);
+		auto res = Boolean::mat_pow(&m);
 		TIMERSTOP(TIME_POW);
 		res->saveTxt("res.txt");
 		delete res; 
 	} else if (argc == 3) {
 		TIMERSTART(BUILD_MATRIX);
-		boolean::Matrix m(argv[1]);
+		Boolean::Matrix m(argv[1]);
 		TIMERSTOP(BUILD_MATRIX);
+    
+    msg(3) << "CSR:" << msgEndl;
+    m.get_csr()->print();
+    msg(3) << "CSR as list:" << msgEndl;
+    m.get_csr()->printAsList();
+    msg(3) << "CSC:" << msgEndl;
+    m.get_csc()->print();
+
 		TIMERSTART(BUILD_BICLIQUES)
-		boolean::Biclique b(argv[2]);
+		Boolean::Biclique b(argv[2]);
 		TIMERSTOP(BUILD_BICLIQUES);
+
+    msg(3) << "bicliques CSR:" << msgEndl;
+    b.print_csr();
+    msg(3) << "bicliques CSR:" << msgEndl;
+    b.print_csc();
+
+    //return 0;
+
 		TIMERSTART(TIME_POW_BICLIQUES);
-		auto res = boolean::mat_pow(&m, &b);
+		auto res = Boolean::mat_pow(&m, &b);
 		TIMERSTOP(TIME_POW_BICLIQUES);
 		//res->get_csr()->print();
 		res->saveTxt("res.txt");

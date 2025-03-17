@@ -183,7 +183,7 @@ namespace weighted
     for (size_t i = 0; i < b_csr->size(); ++i) {
       auto csr = b_csr->at(i);
       for (size_t j = 0; j < csr->row_id.size(); ++j) {
-        if (index[csr->row_id[j]] != UINT32_MAX) {
+        if (csr->row_id[j] < index.size() and index[csr->row_id[j]] != UINT32_MAX) {
           Intersection* inter = new Intersection();
           inter->start_col = A->col_ptr[index[csr->row_id[j]]];
           inter->end_col = A->col_ptr[index[csr->row_id[j]] + 1];

@@ -131,9 +131,17 @@ namespace Boolean
 
     size_t csc_size = csc->col_id.size();
     size_t csr_size = csr->row_id.size();
+
 		while (i < csc_size and j < csr_size) {
 			if (csc->col_id[i] == csr->row_id[j]) {
-				Hr.push(new Intersection(csc->col_ptr[i], csc->col_ptr[i+1], csr->row_ptr[j], csr->row_ptr[j+1], csc->row_ind[csc->col_ptr[i]], csr->col_ind[csr->row_ptr[j]]));
+				Hr.push(new Intersection(
+                      csc->col_ptr[i], 
+                      csc->col_ptr[i+1], 
+                      csr->row_ptr[j], 
+                      csr->row_ptr[j+1], 
+                      csc->row_ind[csc->col_ptr[i]], 
+                      csr->col_ind[csr->row_ptr[j]])
+                );
         dimY = (csc->col_ptr[i+1] - csc->col_ptr[i]) * (csr->row_ptr[j+1] - csr->row_ptr[j]);
         ++dimX;
 				++i;
@@ -160,7 +168,10 @@ namespace Boolean
           Hc.pop(); 
           if (Hc.empty() or inter->value_row != Hc.top()->value_row) { // si queda vacio o si el siguiente valor es distinto, push en csr
             csr_res->col_ind.push_back(csr->col_ind[inter->index_row]);
-            if (csr_res->row_id.empty() or (csr_res->row_id.back() != csc->row_ind[inter->index_col])) {
+            
+            assert(csr_res->row_id.back() <= csc->row_ind[inter->index_col]);
+
+            if (csr_res->row_id.empty() or (csr_res->row_id.back() < csc->row_ind[inter->index_col])) {
               csr_res->row_id.push_back(csc->row_ind[inter->index_col]);
               csr_res->row_ptr.push_back(csr_res->col_ind.size()-1);
             }
@@ -189,14 +200,21 @@ namespace Boolean
 
   csr_matrix* compute_intersections(csc_matrix* A, Biclique* b)
   {
+    #ifdef DEBUG_LEVEL
     assert(A != nullptr and b != nullptr);
+    #endif
 
     auto b_csr = b->get_csr();
     auto csr_res = new csr_matrix();
 
+    msg(3) << "in func" << msgEndl;
+    b->print_csc();
+    b->print_csr();
+
     std::vector<uint32_t> index(A->col_id.back()+1, UINT32_MAX);
     for (size_t i = 0; i < A->col_id.size(); i++) {
       index[A->col_id[i]] = i;
+      msg(6) << A->col_id[i] << ": " << i << msgEndl;
     }
 
     PQ_Col Hr;
@@ -204,7 +222,7 @@ namespace Boolean
     for (size_t i = 0; i < b_csr->size(); i++) {
       auto csr = b_csr->at(i);
       for (size_t j = 0; j < csr->row_id.size(); j++) {
-        if (index[csr->row_id[j]] != UINT32_MAX) {
+        if (csr->row_id[j] < index.size() and index[csr->row_id[j]] != UINT32_MAX) {
           Hr.push(new Intersection(
              A->col_ptr[index[csr->row_id[j]]],                   //start_col
              A->col_ptr[index[csr->row_id[j]] + 1],               //end_col
@@ -303,7 +321,7 @@ namespace Boolean
 
       for (size_t j = 0; j < S_i->size(); j++) { 
         size_t ind = S_i->at(j);
-        if (index[ind] != UINT32_MAX) {
+        if (ind < index.size() and index[ind] != UINT32_MAX) {
           size_t start_row = A_csr->row_ptr[index[ind]];
           size_t end_row = A_csr->row_ptr[index[ind] + 1];
           for (size_t k = start_row; k < end_row; ++k) {

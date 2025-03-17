@@ -33,15 +33,15 @@ namespace Boolean
     void print()
     {
       std::cout << std::endl << "col_ind: ";
-      for (auto i : col_ind) {
+      for (auto& i : col_ind) {
         std::cout << i << " ";
       } 
       std::cout << std::endl << "row_ptr: "; 
-      for (auto i : row_ptr) {
+      for (auto& i : row_ptr) {
         std::cout << i << " ";
       } 
       std::cout << std::endl << "row_id: ";
-      for (auto i : row_id) {
+      for (auto& i : row_id) {
         std::cout << i << " ";
       } 
       std::cout << std::endl;
@@ -50,9 +50,12 @@ namespace Boolean
     void printAsList()
     {
       for (size_t i = 0; i < row_id.size(); ++i) {
-        std::cout << row_id.at(i) << ":";
         size_t start = row_ptr.at(i);
         size_t stop = row_ptr.at(i+1);
+
+        if (start == stop) continue;
+
+        std::cout << row_id.at(i) << ":";
 
         while (start < stop) {
           std::cout << " " << col_ind.at(start);

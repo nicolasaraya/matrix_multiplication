@@ -39,7 +39,7 @@ namespace Boolean
 			getline(file, line);
 			auto adjacents = utils::splitString(line, " ");
 
-			if (adjacents.empty()) {
+			if (adjacents.size() <= 1) {
 				continue;
 			}
 			
