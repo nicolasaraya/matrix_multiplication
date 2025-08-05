@@ -1,0 +1,14 @@
+****************************************************************
+Original Size Adjacency_matrix: 6
+Current Size Adjacency_matrix: 6
+
+Original Edges Size Adjacency_matrix: 27
+Current Edges Size Adjacency_matrix: 27
+
+Number of Bicliques Extracted: 0
+Sum of S: 0
+Sum of C: 0
+Sum of S + C: 0
+Sum of Multiplication of S x C: 0
+ | S x C | / | S + C |: -nan
+Compression percentage: 0
