@@ -1,0 +1,6 @@
+test/
+*.out
+*.bin
+*.exe
+*.gch
+*.o

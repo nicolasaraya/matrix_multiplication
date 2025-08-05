@@ -1,0 +1,289 @@
+#include "biclique_boolean.hpp"
+#include "Utils.hpp"
+
+#include <string>
+#include <vector>
+#include <fstream>
+#include <map>
+#include <cassert>
+#include <iostream>
+#include <cstdint>
+
+
+Biclique::Biclique(std::string path)
+{
+  setFile(path);
+  csr = new std::vector<csr_biclique*>();
+  csc = new std::vector<csc_biclique*>();
+  marks = new std::vector<std::pair<uint32_t, std::vector<uint32_t>>>();
+  if (utils::validateExtension(path, "txt")) {
+    make_csr();
+  } else if (utils::validateExtension(path, "bin")) {
+    make_csr_bin();
+  }
+  make_csc();
+}
+
+Biclique::~Biclique()
+{
+  if (csc) {
+    delete_csc();
+  }
+  if (csr) {
+    delete_csr();
+  }
+  delete marks;
+  marks = nullptr;
+}
+
+void Biclique::setFile(std::string path)
+{
+  this->path = path; 
+}
+
+void Biclique::make_csr()
+{
+  TIMERSTART(BUILD_CSR_BICLIQUE);
+
+  std::ifstream file;
+  file.open(path);
+  assert(file.is_open());
+
+  std::string s;
+
+  std::map<uint32_t, std::vector<uint32_t>> tempMark;
+  //getline(file, s); //skip first line
+
+  while (getline(file, s)) {
+    auto b = new csr_biclique();
+    csr->push_back(b);
+
+    //auto values = utils::splitString(s, ";");
+    s.erase(0, 1); //remove S 
+    s.erase(0, 1); //remove :
+    auto S = utils::splitString(s, " ");
+
+    getline(file, s);
+    s.erase(0, 1); //remove C 
+    s.erase(0, 1); //remove :
+    auto C = utils::splitString(s, " ");
+
+    for (size_t i = 0; i < S.size(); i++) {
+      b->row_id.push_back(atoll(S[i].c_str()));
+      tempMark[b->row_id.back()].push_back(csr->size()-1);
+    }
+    for (size_t i = 0; i < C.size(); i++) {
+      b->col_ind.push_back(atoll(C[i].c_str()));
+    }
+    if (max_row < b->row_id.back()) max_row = b->row_id.back();
+    num_edges += C.size() * S.size();
+  }
+  file.close();
+
+  for (auto i : tempMark) {
+    marks->emplace_back(i.first, i.second);
+  }
+
+  std::cout << "edges in bicliques: " << num_edges << std::endl;
+  
+  TIMERSTOP(BUILD_CSR_BICLIQUE);
+}
+
+void Biclique::make_csr_bin()
+{
+  TIMERSTART(BUILD_CSR_BICLIQUE_BIN);
+
+  std::ifstream file;
+  file.open(path, std::ios::binary);
+  assert(file.is_open());
+
+  std::string s;
+
+  std::map<uint32_t, std::vector<uint32_t>> tempMark;
+
+  while (file.peek() != EOF) {
+    auto* b = new csr_biclique();
+    csr->push_back(b);
+
+    uint32_t S_size;
+    file.read(reinterpret_cast<char*>(&S_size), sizeof(S_size));
+
+    std::vector<uint32_t> S;
+    uint32_t value;
+    while (S_size--) {
+      file.read(reinterpret_cast<char*>(&value), sizeof(value));
+      S.push_back(value);
+    }
+
+    uint32_t C_size;
+    file.read(reinterpret_cast<char*>(&C_size), sizeof(C_size));
+
+    std::vector<uint32_t> C;
+    while (C_size--) {
+      file.read(reinterpret_cast<char*>(&value), sizeof(value));
+      C.push_back(value);
+    }
+
+    for (size_t i = 0; i < S.size(); i++) {
+      b->row_id.push_back(S[i]);
+      tempMark[b->row_id.back()].push_back(csr->size()-1);
+    }
+    for (size_t i = 0; i < C.size(); i++) {
+      b->col_ind.push_back(C[i]);
+      //b->values.push_back(atoll(sp[1].c_str()));
+    }
+    if (max_row < b->row_id.back()) max_row = b->row_id.back();
+    num_edges += C.size() * S.size();;
+
+  }
+  file.close();
+
+  for (auto i : tempMark) {
+    marks->emplace_back(i.first, i.second);
+  }
+
+  std::cout << "edges in bicliques: " << num_edges << std::endl;
+
+  TIMERSTOP(BUILD_CSR_BICLIQUE_BIN);
+}
+
+void Biclique::make_csc() 
+{
+  assert(csr != nullptr);
+
+  TIMERSTART(BUILD_CSC_BICLIQUE);
+
+  for (auto i : *csr) {
+    auto b = new csc_biclique();
+    csc->push_back(b);
+    //b->values = i->values;
+    b->row_ind = i->row_id;
+    b->col_id = i->col_ind;
+
+    if (max_col < b->col_id.back()) max_col = b->col_id.back();
+  }
+
+  TIMERSTOP(BUILD_CSC_BICLIQUE);
+  return;
+}
+#if DEBUG
+void Biclique::print_csr()
+{
+  size_t count = 0; 
+  for (auto i : *csr) {
+    std::cout << "Biclique " << ++count;
+    if (i != nullptr) i->print();
+    std::cout << std::endl;
+  }
+}
+
+void Biclique::print_csc()
+{
+  size_t count = 0; 
+  for (auto i : *csc) {
+    std::cout << "Biclique " << ++count;
+    if (i != nullptr) i->print();
+    std::cout << std::endl;
+  }
+}
+#endif
+
+std::vector<csr_biclique*>* Biclique::get_csr()
+{
+  return csr;
+}
+
+std::vector<csc_biclique*>* Biclique::get_csc()
+{
+  return csc;
+}
+
+std::vector<std::pair<uint32_t, std::vector<uint32_t>>>* Biclique::get_marks()
+{
+  return marks;
+}
+
+std::vector<uint32_t>* Biclique::get_indexes(uint32_t id)
+{
+  auto search = binary_search(0, marks->size() - 1, id);
+  if (search != UINT32_MAX) {
+    return &(marks->at(search).second);
+  }
+  return nullptr;
+}
+
+uint32_t Biclique::binary_search(uint32_t l, uint32_t r, uint32_t id) 
+{
+  if (r >= l) {
+    uint32_t mid = l + (r - l) / 2;
+
+    if (marks->at(mid).first == id) {
+      return mid;
+    }
+    if (marks->at(mid).first > id) {
+      if (mid == 0) {
+        return UINT32_MAX;
+      }
+      return binary_search(l, mid - 1, id);
+    }
+    return binary_search(mid + 1, r, id);
+  }
+  return UINT32_MAX;
+}
+
+void Biclique::delete_csr()
+{
+  if (csr) {
+    for (auto it : *csr) {
+      delete it;
+    }
+    delete csr;
+    csr = nullptr;
+  }
+  return;
+}
+
+void Biclique::delete_csc()
+{
+  if (csc) {
+    for (auto it : *csc) {
+      delete it;
+    }
+    delete csc;
+    csc = nullptr;
+  }
+  return;
+}
+
+uint64_t Biclique::getNumEdges()
+{
+  return num_edges;
+}
+
+uint32_t Biclique::maxCol()
+{
+  return max_col;
+}
+
+uint32_t Biclique::maxRow()
+{
+  return max_row;
+}
+
+uint32_t Biclique::maxDim()
+{
+  return (max_col > max_row) ? max_col : max_row;
+}
+
+#if DEBUG
+void Biclique::printMarks()
+{
+  for (auto& i : *marks) {
+    std::cout << i.first << ":";
+    for (auto& j : i.second) {
+      std::cout << " " << j;
+    }
+    std::cout << std::endl;
+  }
+}
+#endif
