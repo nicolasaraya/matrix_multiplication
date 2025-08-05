@@ -91,12 +91,13 @@ void powBicl(char const *argv[])
   auto* bxb = compute_intersections(biclique, biclique);
   TIMERSTOP(bxb);
   TIMERSTOP(total_operations);
-  
+  delete biclique;
+
   #if DEBUG
   bxb->print();
   bxb->printAsList();
   #endif
-  delete biclique;
+  
 
   TIMERSTART(join);
   auto* join = csr_add(AxA, Axb);
