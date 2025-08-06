@@ -288,6 +288,8 @@ csr_matrix* compute_intersections(csc_matrix* A_csc, csr_matrix* B_csr)
           #if DEBUG 
           std::cout << "Inter modified, push in Hc: " << inter <<  std::endl;
           #endif
+        } else {
+          delete inter;
         }
       }
     } 
@@ -300,7 +302,9 @@ csr_matrix* compute_intersections(csc_matrix* A_csc, csr_matrix* B_csr)
       #if DEBUG 
       std::cout << "Elem modified, push in Hr: " << elem <<  std::endl;
       #endif
-    } 
+    } else {
+      delete elem;
+    }
 
     #if DEBUG
     std::cout << std::endl << std::endl << "New iteration" << std::endl;
@@ -408,7 +412,9 @@ csr_matrix* compute_intersections(csc_matrix* A_csc, Biclique* b)
           #if DEBUG 
           std::cout << "Inter modified, push in Hc: " << inter <<  std::endl;
           #endif
-        } 
+        } else {
+          delete inter;
+        }
         
       }
     }
@@ -417,7 +423,9 @@ csr_matrix* compute_intersections(csc_matrix* A_csc, Biclique* b)
       ++(elem->start_col);
       elem->value_col = A_csc->row_ind[elem->start_col];
       Hr.push(elem);
-    } 
+    } else {
+      delete elem;
+    }
   }
 
   res->row_ptr.push_back(res->col_ind.size());

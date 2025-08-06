@@ -112,13 +112,14 @@ void powBicl(char const *argv[])
   TIMERSTOP(join);
   TIMERSTOP(TOTAL);
 
+  Matrix res;
+  res.set_csr(join3);
+
   #if DEBUG
   join3->print();
   join3->printAsList();
   #else
   auto newPath = utils::modify_path(argv[1], "_powBic.txt");
-  Matrix res;
-  res.set_csr(join3);
   res.saveTxt(newPath);
   #endif
 
@@ -138,19 +139,18 @@ void pow(char const *argv[])
   TIMERSTART(AxA);
   auto* AxA = compute_intersections(matrix->get_csc(), matrix->get_csr());
   TIMERSTOP(AxA);
+  delete matrix;
 
-  #if DEBUG
-  AxA->print();
-  AxA->printAsList();
-  #endif
+  Matrix res;
+  res.set_csr(AxA);
 
   #if DEBUG
   AxA->print();
   AxA->printAsList();
   #else
+
   auto newPath = utils::modify_path(argv[1], "_pow.txt");
-  Matrix res;
-  res.set_csr(AxA);
+  
   res.saveTxt(newPath);
   #endif
 }
