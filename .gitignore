@@ -4,3 +4,6 @@
 *.exe
 *.gch
 *.o
+test/bicliques_powBic_bicliques.txt
+test/matrix_compressed_powBic.txt
+ng

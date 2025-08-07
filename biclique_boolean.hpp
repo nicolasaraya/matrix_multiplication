@@ -5,6 +5,7 @@
 #include <iostream>
 #include <vector>
 #include <string>
+#include <map>
 
 struct csr_biclique 
 {
@@ -70,13 +71,16 @@ struct csc_biclique
 class Biclique
 {
   public:
-    Biclique() = default;
+    Biclique(void);
     Biclique(std::string path);
     ~Biclique();
     void setFile(std::string path);
     void make_csr_bin();
     void make_csr();
     void make_csc();
+
+    void add_csr(csr_biclique* bic);
+    void update_marks(std::map<uint32_t, std::vector<uint32_t>>& tempMark);
 
     void print_csr();
     void print_csc();
@@ -92,12 +96,16 @@ class Biclique
     uint32_t maxRow();
     uint32_t maxDim();
     uint64_t getNumEdges();
+    size_t countBicliques() { return csr->size(); }
+    void saveTxt();
+    void saveTxt(std::string path);
+    std::string getPath() { return path; }
 
   private:
     std::string path = "";
     std::vector<csr_biclique*>* csr = nullptr;
     std::vector<csc_biclique*>* csc = nullptr;
-    std::vector<std::pair<uint32_t, std::vector<uint32_t>>>* marks;
+    std::vector<std::pair<uint32_t, std::vector<uint32_t>>>* marks = nullptr;
     uint64_t num_edges = 0;
     uint32_t max_col = 0;
     uint32_t max_row = 0; 

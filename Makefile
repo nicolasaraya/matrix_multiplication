@@ -33,3 +33,6 @@ $(TARGET): $(OBJ)
 
 clean:
 	rm -f $(OBJ) $(TARGET)
+
+git:
+	git push origin ng --force

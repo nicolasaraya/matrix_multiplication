@@ -145,6 +145,8 @@ class Matrix {
     void saveTxt(std::string path);
     void saveBin();
     void saveBin(std::string path);
+    std::string getPath() { return path; }
+    void setPath(std::string newPath) { path = newPath; }
 
   private:
     std::string path = "";

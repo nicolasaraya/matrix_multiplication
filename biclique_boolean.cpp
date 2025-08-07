@@ -9,6 +9,12 @@
 #include <iostream>
 #include <cstdint>
 
+Biclique::Biclique(void)
+{
+  csr = new std::vector<csr_biclique*>();
+  csc = new std::vector<csc_biclique*>();
+  marks = new std::vector<std::pair<uint32_t, std::vector<uint32_t>>>();
+}
 
 Biclique::Biclique(std::string path)
 {
@@ -39,6 +45,23 @@ Biclique::~Biclique()
 void Biclique::setFile(std::string path)
 {
   this->path = path; 
+}
+
+void Biclique::add_csr(csr_biclique* bic)
+{
+  csr->push_back(bic);
+  if (max_row < bic->row_id.back()) {
+    max_row = bic->row_id.back();
+    num_edges += bic->row_id.size() * bic->col_ind.size();
+  }
+}
+
+void Biclique::update_marks(std::map<uint32_t, std::vector<uint32_t>>& tempMark)
+{
+  for (auto i : tempMark) {
+    marks->emplace_back(i.first, i.second);
+  }
+  std::cout << "edges in bicliques: " << num_edges << std::endl;
 }
 
 void Biclique::make_csr()
@@ -166,7 +189,6 @@ void Biclique::make_csc()
   TIMERSTOP(BUILD_CSC_BICLIQUE);
   return;
 }
-#if DEBUG
 void Biclique::print_csr()
 {
   size_t count = 0; 
@@ -186,7 +208,6 @@ void Biclique::print_csc()
     std::cout << std::endl;
   }
 }
-#endif
 
 std::vector<csr_biclique*>* Biclique::get_csr()
 {
@@ -275,7 +296,6 @@ uint32_t Biclique::maxDim()
   return (max_col > max_row) ? max_col : max_row;
 }
 
-#if DEBUG
 void Biclique::printMarks()
 {
   for (auto& i : *marks) {
@@ -286,4 +306,31 @@ void Biclique::printMarks()
     std::cout << std::endl;
   }
 }
-#endif
+
+void Biclique::saveTxt()
+{
+  return saveTxt(path);
+}
+void Biclique::saveTxt(std::string path)
+{
+  std::cout << "Saving: " << path << std::endl;
+  std::cout << "Edges: " << num_edges << std::endl;
+  std::cout << "Num bicl: " << csr->size() << std::endl;
+
+  std::ofstream file;
+  file.open(path, std::ofstream::out | std::ofstream::trunc); // limpia el contenido del fichero
+
+  for (auto &bic : *csr) {
+    file << "S:";
+    for (auto &s : bic->row_id) {
+      file << " " << s;
+    }
+    file << std::endl << "C:";
+    for (auto &c : bic->col_ind) {
+      file << " " << c;
+    }
+    file << std::endl;
+  }
+
+  file.close();
+}
