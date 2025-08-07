@@ -90,6 +90,6 @@ std::vector<Inters_Bicl>* compute_intersections(Biclique* a, Biclique* b);
 
 csr_matrix* csrFromIntersBicl(Biclique* b, std::vector<Inters_Bicl>* intersections);
 csr_matrix* csr_add(csr_matrix* A, csr_matrix* B);
-Biclique* biclique_add(std::vector<Inters_Bicl>* interA, std::vector<Inters_Bicl>* interB);
+Biclique* biclique_add(Biclique* a, Biclique* b, std::vector<Inters_Bicl>* interA, std::vector<Inters_Bicl>* interB);
 
 #endif

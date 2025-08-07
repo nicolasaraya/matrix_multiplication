@@ -172,7 +172,7 @@ void powBicl(Matrix* matrix, Biclique* biclique, Matrix*& outMatrix, Biclique*& 
   TIMERSTOP(total_operations);
   
   TIMERSTART(join);
-  outBiclique = biclique_add(bxAinters, bxbinter);
+  outBiclique = biclique_add(biclique, biclique, bxAinters, bxbinter);
   auto* join = csr_add(AxA, Axb);
   delete AxA;
   delete Axb;
@@ -251,8 +251,9 @@ int main(int argc, char const *argv[])
         auto *C = new Matrix();
         auto *b = new Biclique();
         powBicl(matrix, biclique, C, b);
+
         C->make_csc();
-        //test pow4
+        b->make_csc();
         powBicl(C, b);
 
         //delete C;

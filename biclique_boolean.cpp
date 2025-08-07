@@ -194,7 +194,7 @@ void Biclique::print_csr()
   assert(not csr->empty());
   size_t count = 0; 
   for (auto i : *csr) {
-    std::cout << "Biclique " << ++count;
+    std::cout << "Biclique " << ++count << ": " << std::endl;
     if (i != nullptr) i->print();
     std::cout << std::endl;
   }

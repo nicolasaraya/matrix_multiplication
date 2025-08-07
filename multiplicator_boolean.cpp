@@ -2,7 +2,7 @@
 #include "biclique_boolean.hpp"
 
 #include <algorithm>
-#include <set>
+#include <unordered_set>
 
 #ifndef DEBUG
 #define DEBUG 0
@@ -699,7 +699,7 @@ csr_matrix* csr_add(csr_matrix* A, csr_matrix* B)
   return res;
 }
 
-Biclique* biclique_add(std::vector<Inters_Bicl>* interA, std::vector<Inters_Bicl>* interB)
+Biclique* biclique_add(Biclique* a, Biclique* b, std::vector<Inters_Bicl>* interA, std::vector<Inters_Bicl>* interB)
 {
   auto *merge = new Biclique();
   std::map<uint32_t, std::vector<uint32_t>> tempMark;
@@ -728,6 +728,47 @@ Biclique* biclique_add(std::vector<Inters_Bicl>* interA, std::vector<Inters_Bicl
   }
   #endif
 
+  auto *a_marks = a->get_marks();
+  auto *b_marks = b->get_marks();
+
+  size_t i = 0;
+  auto endA = a_marks->size();
+  size_t j = 0;
+  auto endB = b_marks->size();
+
+  while (i != endA and j != endB) {
+    if (a_marks->at(i).first == b_marks->at(j).first) {
+      //handle repeated edges;
+      std::unordered_set<uint32_t> visited;
+      for (auto &k : a_marks->at(i).second) {
+        for (auto& l : interA->at(k).C) {
+          visited.emplace(l);
+        }
+      } 
+
+      for (auto &k : b_marks->at(j).second) {
+        std::vector<uint32_t> C_temp;
+        for(auto& l : interB->at(k).C) {
+          if (visited.emplace(l).second) {
+            C_temp.emplace_back(l);
+          } else {
+            #if DEBUG
+            std::cout << "Repeated edge: (" << a_marks->at(i).first << ", " << l << ")" << std::endl;
+            #endif
+          }
+        }
+        interB->at(k).C = C_temp;
+      }
+      i++;
+      j++;
+    } else if (a_marks->at(i).first < b_marks->at(j).first) {
+      i++;
+    } else {
+      j++;
+    }
+  }
+
+
   interA->insert(interA->end(), interB->begin(), interB->end());
 
   for (auto &bic : *interA) {
@@ -735,13 +776,16 @@ Biclique* biclique_add(std::vector<Inters_Bicl>* interA, std::vector<Inters_Bicl
     auto *S  = bic.S;
     auto *C = &(bic.C);
 
+    if (S->empty() or C->empty()) {
+      continue; 
+    }
+
     for (auto &value : *S) {
       b->row_id.push_back(value);
-      tempMark[b->row_id.back()].push_back(merge->countBicliques()-1);
+      tempMark[b->row_id.back()].push_back(merge->countBicliques());
     }
 
     b->col_ind = *C;
-
     merge->add_csr(b);
   }
 
