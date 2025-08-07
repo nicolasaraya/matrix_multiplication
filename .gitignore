@@ -7,3 +7,7 @@
 test/bicliques_powBic_bicliques.txt
 test/matrix_compressed_powBic.txt
 ng
+log
+pow4_powBic.txt
+test/bicliques_powBic_cb.txt
+test/matrix_compressed_powBic_cm.txt

@@ -191,6 +191,7 @@ void Biclique::make_csc()
 }
 void Biclique::print_csr()
 {
+  assert(not csr->empty());
   size_t count = 0; 
   for (auto i : *csr) {
     std::cout << "Biclique " << ++count;
@@ -311,14 +312,16 @@ void Biclique::saveTxt()
 {
   return saveTxt(path);
 }
-void Biclique::saveTxt(std::string path)
+void Biclique::saveTxt(std::string pathFile)
 {
-  std::cout << "Saving: " << path << std::endl;
+  std::cout << "Saving: " << pathFile << std::endl;
   std::cout << "Edges: " << num_edges << std::endl;
   std::cout << "Num bicl: " << csr->size() << std::endl;
 
+  path = pathFile;
+
   std::ofstream file;
-  file.open(path, std::ofstream::out | std::ofstream::trunc); // limpia el contenido del fichero
+  file.open(pathFile, std::ofstream::out | std::ofstream::trunc); // limpia el contenido del fichero
 
   for (auto &bic : *csr) {
     file << "S:";

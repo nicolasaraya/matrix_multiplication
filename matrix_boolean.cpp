@@ -191,6 +191,9 @@ void Matrix::saveTxt(std::string pathFile)
   std::cout << "Saving: " << pathFile << std::endl;
   std::cout << "Edges: " << csr->nEdges() << std::endl;
   std::cout << "Nodes: " << csr->nRows() << std::endl;
+
+  path = pathFile;
+
   std::ofstream file;
   file.open(pathFile, std::ofstream::out | std::ofstream::trunc); // limpia el contenido del fichero
   file << csr->col_ind.size() << std::endl;

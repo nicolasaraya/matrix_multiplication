@@ -45,7 +45,9 @@ void operator delete[](void* memory) noexcept
 void powBicl(Matrix* matrix, Biclique* biclique)
 {
   #if DEBUG
+  std::cout << "Matrix CSR:" << std::endl;
   matrix->get_csr()->print();
+  std::cout << "Matrix CSC:" << std::endl;
   matrix->get_csc()->print();
   biclique->print_csr();
   biclique->print_csc();
@@ -124,7 +126,7 @@ void powBicl(Matrix* matrix, Biclique* biclique)
 
 }
 
-void powBicl(Matrix* matrix, Biclique* biclique, Matrix* outMatrix, Biclique *outBiclique)
+void powBicl(Matrix* matrix, Biclique* biclique, Matrix*& outMatrix, Biclique*& outBiclique)
 {
   #if DEBUG
   matrix->get_csr()->print();
@@ -175,8 +177,8 @@ void powBicl(Matrix* matrix, Biclique* biclique, Matrix* outMatrix, Biclique *ou
   delete AxA;
   delete Axb;
   delete biclique;
+
   TIMERSTOP(join);
-  
   TIMERSTOP(TOTAL);
 
   outMatrix->set_csr(join);
@@ -190,6 +192,7 @@ void powBicl(Matrix* matrix, Biclique* biclique, Matrix* outMatrix, Biclique *ou
   auto newPathBic = utils::modify_path(pathBicliques, "_powBic_cb.txt");
   outBiclique->saveTxt(newPathBic);
   #endif
+  return;
 }
 
 void pow(Matrix* matrix)
@@ -248,8 +251,7 @@ int main(int argc, char const *argv[])
         auto *C = new Matrix();
         auto *b = new Biclique();
         powBicl(matrix, biclique, C, b);
-        
-        C->setPath(std::string("pow4.txt"));
+        C->make_csc();
         //test pow4
         powBicl(C, b);
 

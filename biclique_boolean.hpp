@@ -98,7 +98,7 @@ class Biclique
     uint64_t getNumEdges();
     size_t countBicliques() { return csr->size(); }
     void saveTxt();
-    void saveTxt(std::string path);
+    void saveTxt(std::string pathFile);
     std::string getPath() { return path; }
 
   private:
