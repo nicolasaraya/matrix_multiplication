@@ -3,6 +3,8 @@
 
 #include <algorithm>
 #include <unordered_set>
+#include <utility>
+#include <set>
 
 #ifndef DEBUG
 #define DEBUG 0
@@ -27,144 +29,272 @@ std::ostream& operator<<(std::ostream& os, const Intersection* elem)
   return os << *elem;
 }
 
-#if 0
-csr_matrix* mult(csc_matrix* A_csc, csr_matrix* B_csr)
+void powBicl(Matrix* matrix, Biclique* biclique)
 {
   #if DEBUG
-  assert(A_csc and B_csr);
+  std::cout << "Matrix CSR:" << std::endl;
+  matrix->get_csr()->print();
+  std::cout << "Matrix CSC:" << std::endl;
+  matrix->get_csc()->print();
+  biclique->print_csr();
+  biclique->print_csc();
   #endif
 
-  PQ_Col Hr;
-  PQ_Row Hc;
+  bool useDelta16 = matrix->getUseDelta16();
 
-  size_t i = 0;
-  size_t j = 0;
+  std::string pathMatrix = matrix->getPath();
 
-  size_t Acol_id_Size = A_csc->col_id.size();
-  size_t Brow_id_Size = B_csr->row_id.size();
+  std::cout << "Starting pow with bicliques" << std::endl;
+  TIMERSTART(TOTAL);
+  TIMERSTART(total_operations);
+  TIMERSTART(AxA);
+  auto* AxA = mult(matrix->get_csc(), matrix->get_csr());
+  TIMERSTOP(AxA);
+  
+  #if DEBUG
+  AxA->print();
+  AxA->printAsList();
+  #endif
 
-  size_t estEdges = 0;
-  size_t estRows = 0;
+  TIMERSTART(Axb);
+  auto* Axb = mult(matrix->get_csc(), biclique);
+  TIMERSTOP(Axb);
+  matrix->delete_csc();
 
-  while (i <  Acol_id_Size and j < Brow_id_Size) {
-    #if DEBUG
-    std::cout << "i: " << i << std::endl;
-    std::cout << "j: " << j << std::endl;
-    std::cout << "Current A->col_id[i]: " << A_csc->col_id[i] << std::endl;
-    std::cout << "Current B->row_id[j]: " << B_csr->row_id[j] << std::endl;
-    #endif 
+  #if DEBUG
+  Axb->print();
+  Axb->printAsList();
+  #endif
 
-    if (A_csc->col_id[i] == B_csr->row_id[j]) {
-      #if DEBUG
-      std::cout << "EQUALS" << std::endl;
-      #endif
+  TIMERSTART(bxA);
+  auto* bxA = mult(biclique, matrix->get_csr());
+  TIMERSTOP(bxA);
+  matrix->delete_csr();
+  delete matrix;
 
-      Intersection* inter = new Intersection();
-      inter->start_col = A_csc->col_ptr[i];
-      inter->end_col = A_csc->col_ptr[i+1];
-      inter->start_row = B_csr->row_ptr[j];
-      inter->end_row =  B_csr->row_ptr[j+1];
-      inter->value_col = A_csc->row_ind[inter->start_col];
-      inter->value_row = B_csr->col_ind[inter->start_row];
-      Hr.push(inter);
+  #if DEBUG
+  bxA->print();
+  bxA->printAsList();
+  #endif
 
-      estEdges += (inter->end_col - inter->start_col) * (inter->end_row - inter->start_row);
-      estRows += 1;
-      
-      #if DEBUG
-      std::cout << "Pushing: " << inter << std::endl;  
-      #endif
+  TIMERSTART(bxb);
+  auto* bxb = mult(biclique, biclique);
+  TIMERSTOP(bxb);
+  TIMERSTOP(total_operations);
+  delete biclique;
 
-      ++i;
-      ++j;
-    } else if (A_csc->col_id[i] > B_csr->row_id[j]) {
-      #if DEBUG
-      std::cout << "Increasing j" << std::endl;
-      #endif
-      ++j;
-    } else {
-      #if DEBUG
-      std::cout << "Increasing i" << std::endl;
-      #endif
-      ++i;
+  #if DEBUG
+  bxb->print();
+  bxb->printAsList();
+  #endif
+  
+
+  TIMERSTART(join);
+  auto* join = csr_add(AxA, Axb);
+  std::cout << "edges AxA + Axb: " << join->nEdges() << std::endl;
+  delete AxA;
+  delete Axb;
+  auto* join2 = csr_add(bxA, bxb);
+  std::cout << "edges bxA + bxb: " << join2->nEdges() << std::endl;
+  delete bxA;
+  delete bxb;
+  auto* join3 = csr_add(join, join2);
+  delete join;
+  delete join2;
+  TIMERSTOP(join);
+  TIMERSTOP(TOTAL);
+
+  Matrix res;
+  res.set_csr(join3);
+  res.setUseDelta16(useDelta16);
+
+  #if DEBUG
+  join3->print();
+  join3->printAsList();
+  #else
+  // auto newPath = utils::modify_path(pathMatrix, "_powBic.txt");
+  // res.saveTxt(newPath);
+  auto newPath = utils::modify_path(pathMatrix, "_powBic.bin");
+  res.saveBin(newPath);
+
+  // Calcular bits por arista
+  std::ifstream file(newPath, std::ios::binary | std::ios::ate);
+  if (file) {
+    std::streamsize fileSize = file.tellg();
+    file.close();
+    size_t nEdges = join3->nEdges();
+    if (nEdges > 0) {
+      double bitsPerEdge = (double(fileSize) * 8.0) / double(nEdges);
+      std::cout << "Bits per edge: " << bitsPerEdge << std::endl;
     }
   }
 
-  auto* res = new csr_matrix;
-  res->col_ind.reserve(estEdges);
-  res->row_ptr.reserve(estRows);
-  res->row_id.reserve(estRows);
+  #endif
 
-  while (not Hr.empty()) {
-    auto* elem = Hr.top();
-    Hr.pop();
-    Hc.push(new Intersection(*elem));
+}
 
-    #if DEBUG
-    std::cout << "Pop Hr: " << elem << std::endl;
-    #endif
+void powBicl(Matrix* matrix, Biclique* biclique, Matrix*& outMatrix, Biclique*& outBiclique)
+{
+  #if DEBUG
+  matrix->get_csr()->print();
+  matrix->get_csc()->print();
+  biclique->print_csr();
+  biclique->print_csc();
+  #endif
 
-    #if DEBUG
-    std::cout << (Hr.empty() ? "Hr empty" : "") << std::endl;
-    std::cout << (Hr.top()->value_col != elem->value_col ? "Hr.top() != current value_col" : "Hr.top() == current value_col") << std::endl;
-    #endif
+  bool useDelta16 = matrix->getUseDelta16();
 
-    if (Hr.empty() or (Hr.top()->value_col != elem->value_col)) {
-      while (not Hc.empty()) {
-        auto* inter = Hc.top();
-        Hc.pop();
+  std::string pathMatrix = matrix->getPath();
+  std::string pathBicliques = biclique->getPath();
 
-        #if DEBUG
-        std::cout << "Pop Hc: " << inter << std::endl;
-        #endif
-        
-        if (Hc.empty() or inter->value_row != Hc.top()->value_row) { //push
-          res->col_ind.push_back(B_csr->col_ind[inter->start_row]);
+  std::cout << "Starting pow with bicliques" << std::endl;
+  TIMERSTART(TOTAL);
+  TIMERSTART(total_operations);
+  TIMERSTART(AxA);
+  auto* AxA = mult(matrix->get_csc(), matrix->get_csr());
+  TIMERSTOP(AxA);
+  
+  #if DEBUG
+  AxA->print();
+  AxA->printAsList();
+  #endif
 
-          if (res->row_id.empty() or (res->row_id.back() != A_csc->row_ind[inter->start_col])) {
-            res->row_id.push_back(A_csc->row_ind[inter->start_col]);
-            res->row_ptr.push_back(res->col_ind.size()-1);
-          }
+  TIMERSTART(Axb);
+  auto* Axb = mult(matrix->get_csc(), biclique);
+  TIMERSTOP(Axb);
+  matrix->delete_csc();
 
-          #if DEBUG
-          std::cout << "(" << A_csc->row_ind[inter->start_col] << ", " << B_csr->col_ind[inter->start_row] << ")" << std::endl;
-          #endif
-        }
+  #if DEBUG
+  Axb->print();
+  Axb->printAsList();
+  #endif
 
-        if (inter->start_row < inter->end_row - 1) {
-          ++(inter->start_row);
-          inter->value_row = B_csr->col_ind[inter->start_row];
-          Hc.push(inter);
+  TIMERSTART(bxA);
+  auto* bxAinter = compute_intersections(biclique, matrix->get_csr());
+  TIMERSTOP(bxA);
 
-          #if DEBUG 
-          std::cout << "Inter modified, push in Hc: " << inter <<  std::endl;
-          #endif
-        }
-      }
-    } 
+  matrix->delete_csr();
+  delete matrix;
 
-    if (elem->start_col < elem->end_col - 1) {
-      ++(elem->start_col);
-      elem->value_col = A_csc->row_ind[elem->start_col];
-      Hr.push(elem);
+  TIMERSTART(bxb);
+  auto* bxbinter = compute_intersections(biclique, biclique);
+  TIMERSTOP(bxb);
+  TIMERSTOP(total_operations);
+  
+  TIMERSTART(join);
+  auto* bicbxA = bicliqueFromIntersBicl(biclique, bxAinter);
+  //delete bxAinter;
+  auto* bicbxb = bicliqueFromIntersBicl(biclique, bxbinter);
+  //delete bxbinter;
+  //delete biclique;
+  bicbxA->addBiclique(bicbxb);
+  delete bicbxb;
+  outBiclique = bicbxA;
+  auto* join = csr_add(AxA, Axb);
+  delete AxA;
+  delete Axb;
+  TIMERSTOP(join);
 
-      #if DEBUG 
-      std::cout << "Elem modified, push in Hr: " << elem <<  std::endl;
-      #endif
-    } 
+  TIMERSTOP(TOTAL);
+  auto* join2 = csr_add(csrFromIntersBicl(biclique, bxAinter), csrFromIntersBicl(biclique, bxbinter));
 
-    #if DEBUG
-    std::cout << std::endl << std::endl << "New iteration" << std::endl;
-    #endif
+  outMatrix = new Matrix();
+  outMatrix->set_csr(join);
+  outMatrix->setUseDelta16(useDelta16);
+
+  #if DEBUG
+  join->print();
+  join->printAsList();
+  #else
+  // auto newPath = utils::modify_path(pathMatrix, "_powBic_cm.txt");
+  // outMatrix->saveTxt(newPath);
+  // auto newPathBic = utils::modify_path(pathBicliques, "_powBic_cb.txt");
+  // outBiclique->saveTxt(newPathBic);
+  auto newPath = utils::modify_path(pathMatrix, "_powBic_cm.bin");
+  outMatrix->saveBin(newPath);
+  auto newPathBic = utils::modify_path(pathBicliques, "_powBic_cb.bin");
+  outBiclique->saveBin(newPathBic);
+
+  Matrix temp;
+  temp.set_csr(csr_add(join, join2));
+  temp.setUseDelta16(useDelta16);
+  auto newPathCsrFull = utils::modify_path(pathMatrix, "_powBic.bin");
+  temp.saveBin(newPathCsrFull);
+
+  std::ifstream fileCM(newPath, std::ios::binary | std::ios::ate);
+  std::ifstream fileCB(newPathBic, std::ios::binary | std::ios::ate);
+  std::ifstream fileFull(newPathCsrFull, std::ios::binary | std::ios::ate);
+
+  if (fileCM and fileCB and fileFull) {
+    std::streamsize sizeCM = fileCM.tellg();
+    std::streamsize sizeCB = fileCB.tellg();
+    std::streamsize sizeFull = fileFull.tellg();
+    fileCM.close();
+    fileCB.close();
+    fileFull.close();
+
+    size_t nEdgesFull = temp.get_csr()->nEdges();
+
+    if (nEdgesFull > 0) {
+      double bpeCMCB = (double(sizeCM + sizeCB) * 8.0) / double(nEdgesFull);
+      std::cout << "Bits per edge (cm+cb): " << bpeCMCB << std::endl;
+
+      double bpeFull = (double(sizeFull) * 8.0) / double(nEdgesFull);
+      std::cout << "Bits per edge (powBic.bin): " << bpeFull << std::endl;
+    }
   }
 
-  res->row_ptr.push_back(res->col_ind.size());
-
-  return res;
+  #endif
+  delete bxAinter;
+  delete bxbinter;
+  delete biclique;
+  delete join2;
+  
+  return;
 }
-#endif 
 
-#if 1
+void pow(Matrix* matrix)
+{
+  #if DEBUG
+  matrix->get_csr()->print();
+  matrix->get_csc()->print();
+  #endif
+
+  std::cout << "Starting pow" << std::endl;
+
+  bool useDelta16 = matrix->getUseDelta16();
+  std::string originalPath = matrix->getPath();
+  TIMERSTART(AxA);
+  auto* AxA = mult(matrix->get_csc(), matrix->get_csr());
+  TIMERSTOP(AxA);
+  delete matrix;
+
+  Matrix res;
+  res.set_csr(AxA);
+  res.setUseDelta16(useDelta16);
+
+  #if DEBUG
+  AxA->print();
+  AxA->printAsList();
+  #else
+
+  auto newPath = utils::modify_path(originalPath, "_pow.bin");
+  res.saveBin(newPath);
+
+  std::ifstream file(newPath, std::ios::binary | std::ios::ate);
+  if (file) {
+    std::streamsize fileSize = file.tellg();
+    file.close();
+    size_t nEdges = AxA->nEdges();
+    if (nEdges > 0) {
+      double bitsPerEdge = (double(fileSize) * 8.0) / double(nEdges);
+      std::cout << "Bits per edge (pow.bin): " << bitsPerEdge << std::endl;
+    }
+  }
+
+  #endif
+}
+
 csr_matrix* mult(csc_matrix* A_csc, csr_matrix* B_csr)
 {
   #if DEBUG
@@ -317,7 +447,6 @@ csr_matrix* mult(csc_matrix* A_csc, csr_matrix* B_csr)
 
   return res;
 }
-#endif
 
 csr_matrix* mult(csc_matrix* A_csc, Biclique* b)
 {
@@ -475,13 +604,12 @@ std::vector<Inters_Bicl>* compute_intersections(Biclique* b, csr_matrix* A_csr)
 
   auto *intersections = new std::vector<Inters_Bicl>();
 
-
   for (size_t i = 0; i < b_csc->size(); i++) { 
     auto S_i = &(b_csc->at(i)->col_id);
     auto C_i = &(b_csc->at(i)->row_ind);
 
     Inters_Bicl p;
-    p.S = C_i;
+    p.S.assign(C_i->begin(), C_i->end());
     std::vector<uint32_t> C_temp;
 
     size_t count = 0;
@@ -498,7 +626,7 @@ std::vector<Inters_Bicl>* compute_intersections(Biclique* b, csr_matrix* A_csr)
       }        
     }
 
-    if (count > 1){
+    if (count > 1) {
       std::sort(C_temp.begin(), C_temp.end());
       for (auto k : C_temp) {
         if (p.C.empty() or p.C.back() != k) {
@@ -506,6 +634,7 @@ std::vector<Inters_Bicl>* compute_intersections(Biclique* b, csr_matrix* A_csr)
         }
       }
     } else {
+      //assert(not C_temp.empty());
       p.C = C_temp;
     }
     intersections->push_back(p);
@@ -531,7 +660,7 @@ std::vector<Inters_Bicl>* compute_intersections(Biclique* a, Biclique* b)
   for (size_t i = 0; i < a_csc->size(); ++i) {
     Inters_Bicl p;
     std::vector<uint32_t> C_temp;
-    p.S = &(a_csc->at(i)->col_id);
+    p.S = (a_csc->at(i)->col_id);
     size_t count = 0;
 
     for (size_t j = 0; j < a_csc->at(i)->col_id.size(); ++j) {
@@ -577,16 +706,20 @@ csr_matrix* csrFromIntersBicl(Biclique* b, std::vector<Inters_Bicl>* intersectio
 
     std::vector<uint32_t> C_temp;
 
+    std::unordered_set<uint32_t> visited;
+
     for (auto& j : i.second) {
       for (auto& k : intersections->at(j).C) {
-        C_temp.push_back(k);
+        if (visited.emplace(k).second) {
+          C_temp.push_back(k);
+        }
       }
     }
 
     if (i.second.size() > 0) std::sort(C_temp.begin(), C_temp.end());
 
     for (auto& j : C_temp) {
-      if (res->col_ind.empty() or res->col_ind.size() == res->row_ptr.back() or res->col_ind.back() != j) {
+      if (res->col_ind.empty() or res->col_ind.size() == res->row_ptr.back() or res->col_ind.back() < j) { // or =
         res->col_ind.push_back(j);
       }
     }
@@ -699,10 +832,88 @@ csr_matrix* csr_add(csr_matrix* A, csr_matrix* B)
   return res;
 }
 
+Biclique* bicliqueFromIntersBicl(Biclique* b, std::vector<Inters_Bicl>* intersections)
+{
+  auto* newBicl = new Biclique();
+
+  std::unordered_map<uint32_t, std::vector<uint32_t>> visited;
+  std::map<uint32_t, std::vector<uint32_t>> tempMark;
+
+  auto* b_marks = b->get_marks();
+
+  for (auto& i : *b_marks) {
+    for (auto& j : i.second) {
+      if (intersections->at(j).C.empty()) {
+        continue;
+      }
+      visited[j].push_back(i.first);
+    }
+  }
+
+  for (size_t i = 0; i < intersections->size(); i++) {
+    if (not visited[i].empty()) {
+      auto newCsr = new csr_biclique();
+      newCsr->col_ind.assign(intersections->at(i).C.begin(), intersections->at(i).C.end());
+      newCsr->row_id.assign(visited[i].begin(), visited[i].end());
+      newBicl->add_csr(newCsr);
+       for (auto& s : newCsr->row_id) {
+        tempMark[s].push_back(newBicl->countBicliques()-1);
+      }
+    }
+  }
+
+  newBicl->update_marks(tempMark);
+
+  return newBicl;
+  
+}
+
+struct PairHash
+{
+  template <class T1, class T2>
+  std::size_t operator()(const std::pair<T1, T2>& p) const 
+  {
+    std::size_t h1 = std::hash<T1>{}(p.first);
+    std::size_t h2 = std::hash<T2>{}(p.second);
+    return h1 ^ (h2 << 1); // combinación simple de hashes
+  }
+};
+
+struct PairEq
+{
+  bool operator()(const std::pair<uint32_t,uint32_t>& a, const std::pair<uint32_t,uint32_t>& b) const
+  {
+    return a.first == b.first && a.second == b.second;
+  }
+};
+
+
+Inters_Bicl removeSFromInter(Inters_Bicl& original, uint32_t index)
+{
+  Inters_Bicl generated;
+  for (auto& s : original.S) {
+    if (s != index) {
+      generated.S.push_back(s);
+    }
+  }
+  generated.C.insert(generated.C.end(), original.C.begin(), original.C.end());
+  return generated;
+}
+
+void removeCFromInter(Inters_Bicl*& original, uint32_t index)
+{
+  std::vector<uint32_t> filteredC;
+  for (auto& c : original->C) {
+    if (c != index) {
+      filteredC.push_back(c);
+    }
+  }
+  original->C.swap(filteredC);
+}
+
 Biclique* biclique_add(Biclique* a, Biclique* b, std::vector<Inters_Bicl>* interA, std::vector<Inters_Bicl>* interB)
 {
   auto *merge = new Biclique();
-  std::map<uint32_t, std::vector<uint32_t>> tempMark;
 
   #if DEBUG
   std::cout << "InterA size: " << interA->size() << std::endl;
@@ -728,68 +939,179 @@ Biclique* biclique_add(Biclique* a, Biclique* b, std::vector<Inters_Bicl>* inter
   }
   #endif
 
-  auto *a_marks = a->get_marks();
-  auto *b_marks = b->get_marks();
+  auto aIter = a->get_marks()->begin();
+  auto bIter = b->get_marks()->begin();
+  auto aEnd = a->get_marks()->end();
+  auto bEnd = b->get_marks()->end();
 
-  size_t i = 0;
-  auto endA = a_marks->size();
-  size_t j = 0;
-  auto endB = b_marks->size();
+  // std::unordered_map<uint32_t, std::vector<uint32_t>> tempMarkA;
+  // std::unordered_map<uint32_t, std::vector<uint32_t>> tempMarkB;
 
-  while (i != endA and j != endB) {
-    if (a_marks->at(i).first == b_marks->at(j).first) {
-      //handle repeated edges;
-      std::unordered_set<uint32_t> visited;
-      for (auto &k : a_marks->at(i).second) {
-        for (auto& l : interA->at(k).C) {
-          visited.emplace(l);
-        }
-      } 
+  while (aIter != aEnd and bIter != bEnd) {
+    auto aId = (*aIter).first;
+    auto bId = (*bIter).first;
+    std::unordered_set<uint32_t> visited;
 
-      for (auto &k : b_marks->at(j).second) {
-        std::vector<uint32_t> C_temp;
-        for(auto& l : interB->at(k).C) {
-          if (visited.emplace(l).second) {
-            C_temp.emplace_back(l);
-          } else {
-            #if DEBUG
-            std::cout << "Repeated edge: (" << a_marks->at(i).first << ", " << l << ")" << std::endl;
-            #endif
+    if (aId == bId) {
+      //a->get_indexes()
+      //tempMarkA[aId].insert(tempMarkA[aId].end(), (*aIter).second.begin(), (*aIter).second.end());
+
+      for (auto& i : (*aIter).second) {
+        for (auto& j : interA->at(i).C) {
+
+          std::vector<uint32_t> rep;
+          if (visited.emplace(j).second) {
+            rep.push_back(j);
+          }
+
+          if (not rep.empty()) {
+            interA->push_back(removeSFromInter(interA->at(i), aId));
+
+            for (auto &r : rep) {
+              auto* ptr = &(interA->at(i));
+              removeCFromInter(ptr, r);
+            }
+
+            for (auto s = interA->at(i).S.begin(); s != interA->at(i).S.end(); s++)  {
+              if (*s != aId) {
+                if (a->get_indexes(*s)) {
+                  a->get_indexes(*s)->push_back(interA->size()-1);
+                } else {
+                  std::cout << "Warning" << std::endl;
+                }
+              }
+            }
           }
         }
-        interB->at(k).C = C_temp;
       }
-      i++;
-      j++;
-    } else if (a_marks->at(i).first < b_marks->at(j).first) {
-      i++;
+
+
+      for (auto& i : (*bIter).second) {
+        for (auto& j : interB->at(i).C) {
+
+          std::vector<uint32_t> rep;
+          if (visited.emplace(j).second) {
+            rep.push_back(j);
+          }
+
+          if (not rep.empty()) {
+            interB->push_back(removeSFromInter(interB->at(i), aId));
+
+            for (auto &r : rep) {
+              auto* ptr = &(interB->at(i));
+              removeCFromInter(ptr, r);
+            }
+
+            for (auto s = interB->at(i).S.begin(); s != interB->at(i).S.end(); s++)  {
+              if (*s != bId) {
+                if (b->get_indexes(*s)) {
+                  b->get_indexes(*s)->push_back(interB->size()-1);
+                } else {
+                  std::cout << "Warning" << std::endl;
+                }
+              }
+            }
+          }
+        }
+      }
+      aIter++;
+      bIter++;
+    } else if (aId < bId) {
+
+      for (auto& i : (*aIter).second) {
+        for (auto& j : interA->at(i).C) {
+
+          std::vector<uint32_t> rep;
+          if (visited.emplace(j).second) {
+            rep.push_back(j);
+          }
+
+          if (not rep.empty()) {
+            interA->push_back(removeSFromInter(interA->at(j), aId));
+
+            for (auto &r : rep) {
+              auto* ptr = &(interA->at(j));
+              removeCFromInter(ptr, r);
+            }
+
+            for (auto s = interA->at(j).S.begin(); s != interA->at(j).S.end(); s++)  {
+              if (*s != aId) {
+                if (a->get_indexes(*s)) {
+                  a->get_indexes(*s)->push_back(interA->size()-1);
+                } else {
+                  std::cout << "Warning" << std::endl;
+                }
+              }
+            }
+          }
+        }
+      }
+      aId++;
     } else {
-      j++;
+      for (auto& i : (*bIter).second) {
+        for (auto& j : interB->at(i).C) {
+
+          std::vector<uint32_t> rep;
+          if (visited.emplace(j).second) {
+            rep.push_back(j);
+          }
+
+          if (not rep.empty()) {
+            interB->push_back(removeSFromInter(interB->at(j),bId));
+
+            for (auto &r : rep) {
+              auto* ptr = &(interB->at(j));
+              removeCFromInter(ptr, r);
+            }
+
+            for (auto s = interB->at(j).S.begin(); s != interB->at(j).S.end(); s++)  {
+              if (*s != bId) {
+                if (b->get_indexes(*s)) {
+                  b->get_indexes(*s)->push_back(interB->size()-1);
+                } else {
+                  std::cout << "Warning" << std::endl;
+                }
+              }
+            }
+          }
+        }
+      }
+      bId++;
     }
   }
 
+  std::map<uint32_t, std::vector<uint32_t>> tempMarks;
 
-  interA->insert(interA->end(), interB->begin(), interB->end());
-
-  for (auto &bic : *interA) {
-    auto b = new csr_biclique();
-    auto *S  = bic.S;
-    auto *C = &(bic.C);
-
-    if (S->empty() or C->empty()) {
-      continue; 
+  for (auto& bicA : *interA) {
+    if (bicA.C.empty() or bicA.S.empty()) {
+      continue;
     }
 
-    for (auto &value : *S) {
-      b->row_id.push_back(value);
-      tempMark[b->row_id.back()].push_back(merge->countBicliques());
-    }
+    auto csr = new csr_biclique();
+    csr->col_ind.insert(csr->col_ind.end(), bicA.C.begin(), bicA.C.end());
 
-    b->col_ind = *C;
-    merge->add_csr(b);
+    for (auto& s : bicA.S) {
+      csr->row_id.push_back(s);
+      tempMarks[s].push_back(merge->countBicliques());
+    }
+    merge->add_csr(csr);
   }
 
-  merge->update_marks(tempMark);
+  for (auto& bicB : *interB) {
+    if (bicB.C.empty() or bicB.S.empty()) {
+      continue;
+    }
+
+    auto csr = new csr_biclique();
+    csr->col_ind.insert(csr->col_ind.end(), bicB.C.begin(), bicB.C.end());
+
+    for (auto& s : bicB.S) {
+      csr->row_id.push_back(s);
+      tempMarks[s].push_back(merge->countBicliques());
+    }
+    merge->add_csr(csr);
+  }
+  merge->update_marks(tempMarks); 
   return merge;
 }
 

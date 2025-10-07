@@ -8,6 +8,7 @@
 #include <cassert>
 #include <iostream>
 #include <cstdint>
+#include <sstream>
 
 Biclique::Biclique(void)
 {
@@ -52,8 +53,58 @@ void Biclique::add_csr(csr_biclique* bic)
   csr->push_back(bic);
   if (max_row < bic->row_id.back()) {
     max_row = bic->row_id.back();
-    num_edges += bic->row_id.size() * bic->col_ind.size();
   }
+  num_edges += bic->row_id.size() * bic->col_ind.size();
+}
+
+void Biclique::addBiclique(Biclique* bic)
+{
+  size_t currentSize = csr->size();
+  
+  auto bMarksIt = bic->get_marks()->begin();
+  auto localMarksIt = marks->begin();
+  auto newMarks = new std::vector<std::pair<uint32_t, std::vector<uint32_t>>>();
+
+  while (bMarksIt != bic->get_marks()->end() and localMarksIt != marks->end()) {
+    auto bId = (*bMarksIt).first;
+    auto aId = (*localMarksIt).first;
+    if (aId == bId) {
+      newMarks->emplace_back(*localMarksIt);
+      for (auto&j : bMarksIt->second) {
+        newMarks->back().second.push_back(currentSize + j);
+      }
+      bMarksIt++;
+      localMarksIt++;
+    } else if (aId < bId) {
+      newMarks->emplace_back(*localMarksIt);
+      localMarksIt++;
+    } else if (aId > bId) {
+      newMarks->emplace_back(bId, std::vector<uint32_t>());
+      for (auto&j : bMarksIt->second) {
+        newMarks->back().second.push_back(currentSize + j);
+      }
+      bMarksIt++;
+    }
+  }
+
+  while (bMarksIt != bic->get_marks()->end()) {
+    newMarks->emplace_back(bMarksIt->first, std::vector<uint32_t>());
+    for (auto&j : bMarksIt->second) {
+      newMarks->back().second.push_back(currentSize + j);
+    }
+    bMarksIt++;
+  }
+
+  while (localMarksIt != marks->end()) {
+    newMarks->emplace_back(*localMarksIt);
+    localMarksIt++;
+  }
+
+  delete marks;
+  marks = newMarks;
+  marks->shrink_to_fit();
+  csr->insert(csr->end(), bic->csr->begin(), bic->csr->end());
+  bic->csr->clear();
 }
 
 void Biclique::update_marks(std::map<uint32_t, std::vector<uint32_t>>& tempMark)
@@ -61,7 +112,12 @@ void Biclique::update_marks(std::map<uint32_t, std::vector<uint32_t>>& tempMark)
   for (auto i : tempMark) {
     marks->emplace_back(i.first, i.second);
   }
-  std::cout << "edges in bicliques: " << num_edges << std::endl;
+  std::cout << "Edges in bicliques: " << num_edges << std::endl;
+}
+
+void Biclique::update_marks(std::vector<std::pair<uint32_t, std::vector<uint32_t>>>* newMarks)
+{
+  marks = newMarks;
 }
 
 void Biclique::make_csr()
@@ -78,9 +134,6 @@ void Biclique::make_csr()
   //getline(file, s); //skip first line
 
   while (getline(file, s)) {
-    auto b = new csr_biclique();
-    csr->push_back(b);
-
     //auto values = utils::splitString(s, ";");
     s.erase(0, 1); //remove S 
     s.erase(0, 1); //remove :
@@ -90,6 +143,13 @@ void Biclique::make_csr()
     s.erase(0, 1); //remove C 
     s.erase(0, 1); //remove :
     auto C = utils::splitString(s, " ");
+
+    if (S.empty() or C.empty()) {
+      continue;
+    }
+
+    auto b = new csr_biclique();
+    csr->push_back(b);
 
     for (size_t i = 0; i < S.size(); i++) {
       b->row_id.push_back(atoll(S[i].c_str()));
@@ -107,7 +167,7 @@ void Biclique::make_csr()
     marks->emplace_back(i.first, i.second);
   }
 
-  std::cout << "edges in bicliques: " << num_edges << std::endl;
+  std::cout << "Edges in bicliques: " << num_edges << std::endl;
   
   TIMERSTOP(BUILD_CSR_BICLIQUE);
 }
@@ -117,55 +177,58 @@ void Biclique::make_csr_bin()
   TIMERSTART(BUILD_CSR_BICLIQUE_BIN);
 
   std::ifstream file;
-  file.open(path, std::ios::binary);
+  file.open(path, std::ios::in | std::ios::binary);
   assert(file.is_open());
 
-  std::string s;
+  file.seekg(0, std::ios::end);
+  std::streamsize size = file.tellg();
+  file.seekg(0, std::ios::beg);
+
+  std::vector<char> buffer(size);
+  if (file.read(buffer.data(), size)) {
+      std::cout << size << " bytes readed from " << path << std::endl;
+  }
+  file.close();
+
+  std::string blob(buffer.data(), buffer.size());
+  std::istringstream iss(blob, std::ios::in | std::ios::binary);
+  buffer.clear();
 
   std::map<uint32_t, std::vector<uint32_t>> tempMark;
 
-  while (file.peek() != EOF) {
+  while (iss.peek() != EOF) {
     auto* b = new csr_biclique();
     csr->push_back(b);
 
-    uint32_t S_size;
-    file.read(reinterpret_cast<char*>(&S_size), sizeof(S_size));
-
-    std::vector<uint32_t> S;
+    uint32_t size;
+    iss.read(reinterpret_cast<char*>(&size), sizeof(size));
+    
+    uint32_t S_size = size;
     uint32_t value;
-    while (S_size--) {
-      file.read(reinterpret_cast<char*>(&value), sizeof(value));
-      S.push_back(value);
-    }
-
-    uint32_t C_size;
-    file.read(reinterpret_cast<char*>(&C_size), sizeof(C_size));
-
-    std::vector<uint32_t> C;
-    while (C_size--) {
-      file.read(reinterpret_cast<char*>(&value), sizeof(value));
-      C.push_back(value);
-    }
-
-    for (size_t i = 0; i < S.size(); i++) {
-      b->row_id.push_back(S[i]);
+    while (size--) {
+      iss.read(reinterpret_cast<char*>(&value), sizeof(value));
+      b->row_id.push_back(value);
       tempMark[b->row_id.back()].push_back(csr->size()-1);
     }
-    for (size_t i = 0; i < C.size(); i++) {
-      b->col_ind.push_back(C[i]);
-      //b->values.push_back(atoll(sp[1].c_str()));
-    }
-    if (max_row < b->row_id.back()) max_row = b->row_id.back();
-    num_edges += C.size() * S.size();;
 
+    iss.read(reinterpret_cast<char*>(&size), sizeof(size));
+    uint32_t C_size = size;
+
+    std::vector<uint32_t> C;
+    while (size--) {
+      iss.read(reinterpret_cast<char*>(&value), sizeof(value));
+      b->col_ind.push_back(value);
+    }
+    
+    if (max_row < b->row_id.back()) max_row = b->row_id.back();
+    num_edges += C_size * S_size;
   }
-  file.close();
 
   for (auto i : tempMark) {
     marks->emplace_back(i.first, i.second);
   }
 
-  std::cout << "edges in bicliques: " << num_edges << std::endl;
+  std::cout << "Edges in bicliques: " << num_edges << std::endl;
 
   TIMERSTOP(BUILD_CSR_BICLIQUE_BIN);
 }
@@ -315,15 +378,20 @@ void Biclique::saveTxt()
 void Biclique::saveTxt(std::string pathFile)
 {
   std::cout << "Saving: " << pathFile << std::endl;
-  std::cout << "Edges: " << num_edges << std::endl;
-  std::cout << "Num bicl: " << csr->size() << std::endl;
 
   path = pathFile;
-
   std::ofstream file;
   file.open(pathFile, std::ofstream::out | std::ofstream::trunc); // limpia el contenido del fichero
 
+  size_t edges = 0;
+  size_t nodes = 0;
+  size_t bicliques = 0;
+
   for (auto &bic : *csr) {
+    if (bic->row_id.empty() or bic->col_ind.empty()) {
+      continue;
+    }
+    bicliques++;
     file << "S:";
     for (auto &s : bic->row_id) {
       file << " " << s;
@@ -332,8 +400,56 @@ void Biclique::saveTxt(std::string pathFile)
     for (auto &c : bic->col_ind) {
       file << " " << c;
     }
+
+    edges += bic->row_id.size() * bic->col_ind.size();
+    nodes += bic->row_id.size();
     file << std::endl;
   }
 
+  
+  std::cout << "Edges: " << edges << std::endl;
+  std::cout << "Nodes: " << nodes << std::endl;
+  std::cout << "Bicliques: " << bicliques << std::endl;
+
   file.close();
+}
+
+void Biclique::saveBin()
+{
+  return saveBin(path);
+}
+
+void Biclique::saveBin(std::string pathFile)
+{
+  std::cout << "Saving: " << pathFile << std::endl;
+
+  path = pathFile;
+  std::ofstream file;
+  file.open(pathFile, std::ofstream::out | std::ofstream::trunc | std::ofstream::binary); 
+
+  size_t edges = 0;
+  size_t nodes = 0;
+  size_t bicliques = 0;
+
+  for (auto &bic : *csr) {
+    if (bic->row_id.empty() or bic->col_ind.empty()) {
+      continue;
+    }
+    bicliques++;
+    uint32_t S_size = bic->row_id.size();
+    file.write(reinterpret_cast<const char*>(&S_size), sizeof(S_size));
+    file.write(reinterpret_cast<const char*>(bic->row_id.data()), S_size * sizeof(uint32_t));
+
+    uint32_t C_size = bic->col_ind.size();
+    file.write(reinterpret_cast<const char*>(&C_size), sizeof(C_size));
+    file.write(reinterpret_cast<const char*>(bic->col_ind.data()), C_size * sizeof(uint32_t));
+
+    edges += bic->row_id.size() * bic->col_ind.size();
+    nodes += bic->row_id.size();
+    file << std::endl;
+  }
+
+  std::cout << "Edges: " << edges << std::endl;
+  std::cout << "Nodes: " << nodes << std::endl;
+  std::cout << "Bicliques: " << bicliques << std::endl;
 }

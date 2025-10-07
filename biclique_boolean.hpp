@@ -81,6 +81,9 @@ class Biclique
 
     void add_csr(csr_biclique* bic);
     void update_marks(std::map<uint32_t, std::vector<uint32_t>>& tempMark);
+    void update_marks(std::vector<std::pair<uint32_t, std::vector<uint32_t>>>* newMarks);
+
+    void addBiclique(Biclique* bic);
 
     void print_csr();
     void print_csc();
@@ -99,6 +102,8 @@ class Biclique
     size_t countBicliques() { return csr->size(); }
     void saveTxt();
     void saveTxt(std::string pathFile);
+    void saveBin();
+    void saveBin(std::string pathFile);
     std::string getPath() { return path; }
 
   private:

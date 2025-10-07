@@ -135,6 +135,7 @@ class Matrix {
     csr_matrix* make_csr();
     csc_matrix* make_csc();
     csr_matrix* make_csr_bin();
+    csr_matrix* make_csr_bin16();
     csr_matrix* get_csr();
     csc_matrix* get_csc();
     void set_csr(csr_matrix* mat);
@@ -145,13 +146,18 @@ class Matrix {
     void saveTxt(std::string path);
     void saveBin();
     void saveBin(std::string path);
+    void saveBin16();
+    void saveBin16(std::string path);
     std::string getPath() { return path; }
     void setPath(std::string newPath) { path = newPath; }
+    void setUseDelta16(bool b) { useDelta16 = b; }
+    bool getUseDelta16() { return useDelta16; }
 
   private:
     std::string path = "";
     csr_matrix* csr = nullptr;
     csc_matrix* csc = nullptr; 
+    bool useDelta16 = false;
 };
 
 

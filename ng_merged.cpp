@@ -50,7 +50,7 @@ int main(int argc, char const *argv[])
       std::cout << " " << argv[i] << std::endl;
     }
 
-    std::cout << "Using Matrix Component an Biclique Component Result" << std::endl;
+    std::cout << "Using CSR Matrix result" << std::endl;
 
     Matrix* matrix = argc > 1 ? new Matrix(argv[1]) : nullptr;
     Biclique* biclique = argc > 2 ? new Biclique(argv[2]) : nullptr;
@@ -61,15 +61,7 @@ int main(int argc, char const *argv[])
         break;
       case 3: 
       {
-        Biclique* b = nullptr;
-        Matrix* C = nullptr;
-        powBicl(matrix, biclique, C, b);
-        if (C) {
-          delete C;
-        }
-        if (b) {
-          delete b;
-        }
+        powBicl(matrix, biclique);
         break;
       }
       default:

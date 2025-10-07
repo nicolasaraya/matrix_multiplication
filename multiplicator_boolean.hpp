@@ -71,14 +71,19 @@ struct Intersection
 
 struct Inters_Bicl
 {
-  std::vector<uint32_t>* S; 
+  std::vector<uint32_t> S; 
   std::vector<uint32_t> C;
 };
 
 typedef std::priority_queue<Intersection*, std::vector<Intersection*>, Intersection::Col_Comp> PQ_Col;
 typedef std::priority_queue<Intersection*, std::vector<Intersection*>, Intersection::Row_Comp> PQ_Row;
 
-
+void powBicl(Matrix* matrix, Biclique* biclique);
+void powBicl(Matrix* matrix, Biclique* biclique, Matrix*& outMatrix, Biclique*& outBiclique);
+void pow(Matrix* matrix);
+void multiply(Matrix* A, Matrix* B);
+void multiply(Matrix* A, Biclique* aB, Matrix* B, Biclique* bB);
+void multiply(Matrix* A, Biclique* aB, Matrix* B, Biclique* bB, Matrix*& outMatrix, Biclique*& outBiclique);
 
 csr_matrix* mult(csc_matrix* A_csc, csr_matrix* B_csr);     //AxA
 csr_matrix* mult(csc_matrix* A_csc, Biclique* b); //Axb
@@ -89,6 +94,7 @@ std::vector<Inters_Bicl>* compute_intersections(Biclique* b, csr_matrix* A_csr);
 std::vector<Inters_Bicl>* compute_intersections(Biclique* a, Biclique* b);
 
 csr_matrix* csrFromIntersBicl(Biclique* b, std::vector<Inters_Bicl>* intersections);
+Biclique* bicliqueFromIntersBicl(Biclique* b, std::vector<Inters_Bicl>* intersections);
 csr_matrix* csr_add(csr_matrix* A, csr_matrix* B);
 Biclique* biclique_add(Biclique* a, Biclique* b, std::vector<Inters_Bicl>* interA, std::vector<Inters_Bicl>* interB);
 
