@@ -64,9 +64,15 @@ int main(int argc, char const *argv[])
         Biclique* b = nullptr;
         Matrix* C = nullptr;
         powBicl(matrix, biclique, C, b);
-        b->make_csc();
-        C->make_csc();
-        powBicl(C,b);
+        Biclique* b2 = nullptr;
+        Matrix* C2 = nullptr;
+        powBicl(C,b, C2, b2);
+        if (C2) {
+          delete C2;
+        }
+        if (b2) {
+          delete b2;
+        }
         break;
       }
       default:

@@ -142,22 +142,23 @@ class Matrix {
     void set_csc(csc_matrix* mat);
     void delete_csr();
     void delete_csc();
-    void saveTxt();
-    void saveTxt(std::string path);
-    void saveBin();
-    void saveBin(std::string path);
-    void saveBin16();
-    void saveBin16(std::string path);
+    void saveTxt() const;
+    void saveTxt(std::string path) const;
+    void saveBin() const;
+    void saveBin(std::string path) const;
+    void saveBin16() const;
+    void saveBin16(std::string path) const;
     std::string getPath() { return path; }
     void setPath(std::string newPath) { path = newPath; }
     void setUseDelta16(bool b) { useDelta16 = b; }
     bool getUseDelta16() { return useDelta16; }
 
   private:
-    std::string path = "";
+    std::string path = "emptypath";
     csr_matrix* csr = nullptr;
     csc_matrix* csc = nullptr; 
     bool useDelta16 = false;
+    bool binaryFormat = false;
 };
 
 

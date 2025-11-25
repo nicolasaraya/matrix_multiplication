@@ -23,3 +23,6 @@ logs/log1
 logs/log2
 test/matrix_compressed_powBic_cm_powBic.txt
 temp_bicliques.txt
+test/matrix_bicliques_powBic_cb.txt
+test/matrix_compressed_powBicFull.txt
+ng

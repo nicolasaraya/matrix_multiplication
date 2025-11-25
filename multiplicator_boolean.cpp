@@ -10,6 +10,10 @@
 #define DEBUG 0
 #endif
 
+#ifndef saveAsTxt
+#define saveAsTxt 0
+#endif
+
 std::ostream& operator<<(std::ostream& os, const Intersection& elem)
 {
   os  << "\n++++++++++++++++\n"
@@ -29,8 +33,33 @@ std::ostream& operator<<(std::ostream& os, const Intersection* elem)
   return os << *elem;
 }
 
+std::ostream& operator<<(std::ostream& os, const Inters_Bicl& elem)
+{
+  os  << "\n++++++++++++++++\n";
+  os  << "S: ";
+  for (auto& i : elem.S) {
+    os << i << " ";
+  }
+  os << "\nC: ";
+  for (auto& i : elem.C) {
+    os << i << " ";
+  }  
+  os << "\n----------------\n";
+  return os;
+}
+
+std::ostream& operator<<(std::ostream& os, const Inters_Bicl* elem)
+{
+  return os << *elem;
+}
+
 void powBicl(Matrix* matrix, Biclique* biclique)
 {
+  matrix->make_csr();
+  matrix->make_csc();
+  biclique->make_csr();
+  biclique->make_csc();
+
   #if DEBUG
   std::cout << "Matrix CSR:" << std::endl;
   matrix->get_csr()->print();
@@ -41,7 +70,6 @@ void powBicl(Matrix* matrix, Biclique* biclique)
   #endif
 
   bool useDelta16 = matrix->getUseDelta16();
-
   std::string pathMatrix = matrix->getPath();
 
   std::cout << "Starting pow with bicliques" << std::endl;
@@ -111,10 +139,11 @@ void powBicl(Matrix* matrix, Biclique* biclique)
   #if DEBUG
   join3->print();
   join3->printAsList();
-  #else
+  #endif
   // auto newPath = utils::modify_path(pathMatrix, "_powBic.txt");
   // res.saveTxt(newPath);
   auto newPath = utils::modify_path(pathMatrix, "_powBic.bin");
+  res.setPath(newPath);
   res.saveBin(newPath);
 
   // Calcular bits por arista
@@ -128,13 +157,16 @@ void powBicl(Matrix* matrix, Biclique* biclique)
       std::cout << "Bits per edge: " << bitsPerEdge << std::endl;
     }
   }
-
-  #endif
-
 }
 
 void powBicl(Matrix* matrix, Biclique* biclique, Matrix*& outMatrix, Biclique*& outBiclique)
 {
+  matrix->make_csr();
+  matrix->make_csc();
+
+  biclique->make_csr();
+  biclique->make_csc();
+
   #if DEBUG
   matrix->get_csr()->print();
   matrix->get_csc()->print();
@@ -155,23 +187,32 @@ void powBicl(Matrix* matrix, Biclique* biclique, Matrix*& outMatrix, Biclique*& 
   TIMERSTOP(AxA);
   
   #if DEBUG
+  std::cout << "AxA result:" << std::endl;
   AxA->print();
   AxA->printAsList();
+  std::cout << "Edges in AxA: " << AxA->nEdges() << std::endl;
   #endif
 
   TIMERSTART(Axb);
-  auto* Axb = mult(matrix->get_csc(), biclique);
+  auto* Axb = compute_intersections(matrix->get_csc(), biclique);
   TIMERSTOP(Axb);
-  matrix->delete_csc();
-
   #if DEBUG
-  Axb->print();
-  Axb->printAsList();
+  std::cout << "Axb intersections:" << std::endl;
+  for (auto& inter : *Axb) {
+    std::cout << inter << std::endl;
+  }
   #endif
+  matrix->delete_csc();
 
   TIMERSTART(bxA);
   auto* bxAinter = compute_intersections(biclique, matrix->get_csr());
   TIMERSTOP(bxA);
+  #if DEBUG
+  std::cout << "bxA intersections:" << std::endl;
+  for (auto& inter : *bxAinter) {
+    std::cout << inter << std::endl;
+  }
+  #endif
 
   matrix->delete_csr();
   delete matrix;
@@ -179,47 +220,68 @@ void powBicl(Matrix* matrix, Biclique* biclique, Matrix*& outMatrix, Biclique*& 
   TIMERSTART(bxb);
   auto* bxbinter = compute_intersections(biclique, biclique);
   TIMERSTOP(bxb);
+  #if DEBUG
+  std::cout << "bxb intersections:" << std::endl;
+  for (auto& inter : *bxbinter) {
+    std::cout << inter << std::endl;
+  }
+  #endif
   TIMERSTOP(total_operations);
   
   TIMERSTART(join);
-  auto* bicbxA = bicliqueFromIntersBicl(biclique, bxAinter);
-  //delete bxAinter;
-  auto* bicbxb = bicliqueFromIntersBicl(biclique, bxbinter);
-  //delete bxbinter;
-  //delete biclique;
-  bicbxA->addBiclique(bicbxb);
-  delete bicbxb;
-  outBiclique = bicbxA;
-  auto* join = csr_add(AxA, Axb);
-  delete AxA;
-  delete Axb;
-  TIMERSTOP(join);
 
-  TIMERSTOP(TOTAL);
-  auto* join2 = csr_add(csrFromIntersBicl(biclique, bxAinter), csrFromIntersBicl(biclique, bxbinter));
+  Axb->insert(Axb->end(), bxAinter->begin(), bxAinter->end());
+  Axb->insert(Axb->end(), bxbinter->begin(), bxbinter->end());
 
-  outMatrix = new Matrix();
-  outMatrix->set_csr(join);
-  outMatrix->setUseDelta16(useDelta16);
+  outBiclique = new Biclique(Axb);
 
   #if DEBUG
-  join->print();
-  join->printAsList();
-  #else
-  // auto newPath = utils::modify_path(pathMatrix, "_powBic_cm.txt");
-  // outMatrix->saveTxt(newPath);
-  // auto newPathBic = utils::modify_path(pathBicliques, "_powBic_cb.txt");
-  // outBiclique->saveTxt(newPathBic);
+  std::cout << "Out Biclique CSR:" << std::endl;
+  outBiclique->print_csr();
+  std::cout << "Marks:" << std::endl;
+  outBiclique->printMarks();
+  #endif
+
+  TIMERSTOP(join);
+  TIMERSTOP(TOTAL);
+
+  outMatrix = new Matrix();
+  outMatrix->set_csr(AxA);
+  outMatrix->setUseDelta16(useDelta16);
+  
   auto newPath = utils::modify_path(pathMatrix, "_powBic_cm.bin");
+  outMatrix->setPath(newPath);
   outMatrix->saveBin(newPath);
   auto newPathBic = utils::modify_path(pathBicliques, "_powBic_cb.bin");
+  outBiclique->setFile(newPathBic);
   outBiclique->saveBin(newPathBic);
 
+  #if saveAsTxt
+  newPath = utils::modify_path(pathMatrix, "_powBic_cm.txt");
+  outMatrix->saveTxt(newPath);
+  newPathBic = utils::modify_path(pathBicliques, "_powBic_cb.txt");
+  outBiclique->saveTxt(newPathBic);
+  #endif
+
+  auto* csrBicl = outBiclique->toMatrix();
+  
+  #if DEBUG
+  std::cout << "AxB + BxA + BxB Matrix:" << std::endl;
+  csrBicl->print();
+  csrBicl->printAsList();
+  #endif
+
   Matrix temp;
-  temp.set_csr(csr_add(join, join2));
+  temp.set_csr(csr_add(AxA, csrBicl));
   temp.setUseDelta16(useDelta16);
-  auto newPathCsrFull = utils::modify_path(pathMatrix, "_powBic.bin");
+  
+  auto newPathCsrFull = utils::modify_path(pathMatrix, "_powBicFull.bin");
   temp.saveBin(newPathCsrFull);
+
+  #if saveAsTxt
+  newPathCsrFull = utils::modify_path(pathMatrix, "_powBicFull.txt");
+  temp.saveTxt(newPathCsrFull);
+  #endif
 
   std::ifstream fileCM(newPath, std::ios::binary | std::ios::ate);
   std::ifstream fileCB(newPathBic, std::ios::binary | std::ios::ate);
@@ -244,17 +306,19 @@ void powBicl(Matrix* matrix, Biclique* biclique, Matrix*& outMatrix, Biclique*& 
     }
   }
 
-  #endif
   delete bxAinter;
   delete bxbinter;
   delete biclique;
-  delete join2;
+  delete csrBicl;
   
   return;
 }
 
 void pow(Matrix* matrix)
 {
+  matrix->make_csr();
+  matrix->make_csc();
+
   #if DEBUG
   matrix->get_csr()->print();
   matrix->get_csc()->print();
@@ -276,10 +340,13 @@ void pow(Matrix* matrix)
   #if DEBUG
   AxA->print();
   AxA->printAsList();
-  #else
+  #endif
 
   auto newPath = utils::modify_path(originalPath, "_pow.bin");
   res.saveBin(newPath);
+
+  newPath = utils::modify_path(originalPath, "_pow.txt");
+  res.saveTxt(newPath);
 
   std::ifstream file(newPath, std::ios::binary | std::ios::ate);
   if (file) {
@@ -291,8 +358,6 @@ void pow(Matrix* matrix)
       std::cout << "Bits per edge (pow.bin): " << bitsPerEdge << std::endl;
     }
   }
-
-  #endif
 }
 
 csr_matrix* mult(csc_matrix* A_csc, csr_matrix* B_csr)
@@ -450,6 +515,17 @@ csr_matrix* mult(csc_matrix* A_csc, csr_matrix* B_csr)
 
 csr_matrix* mult(csc_matrix* A_csc, Biclique* b)
 {
+  auto *inters = compute_intersections(A_csc, b);
+  auto *bicliqueTemp = new Biclique(inters);
+  auto *res = bicliqueTemp->toMatrix();
+  delete bicliqueTemp;
+  return res;
+  //return Biclique::csrFromInters(inters);
+}
+
+#if 0
+csr_matrix* mult(csc_matrix* A_csc, Biclique* b)
+{
   #if DEBUG
   assert(A_csc and b);
   #endif
@@ -474,15 +550,15 @@ csr_matrix* mult(csc_matrix* A_csc, Biclique* b)
     std::cout << "Intersecting biclique num: " << i << std::endl;  
     #endif
 
-    for (size_t j = 0; j < csr->row_id.size(); ++j) {
-      if (csr->row_id[j] < index.size() and index[csr->row_id[j]] != UINT32_MAX) {
+    for (size_t j = 0; j < csr->row_id->size(); ++j) {
+      if ((*csr->row_id)[j] < index.size() and index[(*csr->row_id)[j]] != UINT32_MAX) {
         Intersection* inter = new Intersection();
-        inter->start_col = A_csc->col_ptr[index[csr->row_id[j]]];
-        inter->end_col = A_csc->col_ptr[index[csr->row_id[j]] + 1];
+        inter->start_col = A_csc->col_ptr[index[(*csr->row_id)[j]]];
+        inter->end_col = A_csc->col_ptr[index[(*csr->row_id)[j]] + 1];
         inter->start_row = 0;
-        inter->end_row = csr->col_ind.size();
+        inter->end_row = csr->col_ind->size();
         inter->value_col = A_csc->row_ind[inter->start_col];
-        inter->value_row = csr->col_ind[inter->start_row];
+        inter->value_row = (*csr->col_ind)[inter->start_row];
         inter->index_bicl = i;
         Hr.push(inter);
 
@@ -521,7 +597,7 @@ csr_matrix* mult(csc_matrix* A_csc, Biclique* b)
         #endif
 
         if (Hc.empty() or inter->value_row != Hc.top()->value_row) { // si queda vacio o si el siguiente valor es distinto, push en csr
-          res->col_ind.push_back(b_csr->at(inter->index_bicl)->col_ind[inter->start_row]);
+          res->col_ind.push_back((*b_csr->at(inter->index_bicl)->col_ind)[inter->start_row]);
 
           if (res->row_id.empty() or (res->row_id.back() != A_csc->row_ind[inter->start_col])) {
             res->row_id.push_back(A_csc->row_ind[inter->start_col]);
@@ -530,13 +606,13 @@ csr_matrix* mult(csc_matrix* A_csc, Biclique* b)
 
           #if DEBUG
           //std::cout <<"(" << A_csc->row_ind[inter->start_col] << ", " << A_csc->row_ind[inter->start_row] << ")" << std::endl;
-          std::cout <<"(" << A_csc->row_ind[inter->start_col] << ", " << b_csr->at(inter->index_bicl)->col_ind[inter->start_row] << ")" << std::endl;
+          //std::cout <<"(" << A_csc->row_ind[inter->start_col] << ", " << b_csr->at(inter->index_bicl)->col_ind[inter->start_row] << ")" << std::endl;
           #endif
         } 
         
         if (inter->start_row < inter->end_row - 1) {
           ++(inter->start_row);
-          inter->value_row = b_csr->at(inter->index_bicl)->col_ind[inter->start_row];
+          inter->value_row = (*b_csr->at(inter->index_bicl)->col_ind)[inter->start_row];
           Hc.push(inter);
 
           #if DEBUG 
@@ -566,20 +642,69 @@ csr_matrix* mult(csc_matrix* A_csc, Biclique* b)
 
   return res;
 }
+#endif
+
+std::vector<Inters_Bicl>* compute_intersections(csc_matrix* A_csc, Biclique* b)
+{
+  #if DEBUG
+  assert(A_csc and b);
+  #endif
+
+  auto* b_csr = b->get_csr();
+
+  // We mark the positions of A_csc col_id for fast access
+  std::vector<uint32_t> index(A_csc->col_id.back()+1, UINT32_MAX);
+  for (size_t i = 0; i < A_csc->col_id.size(); i++) {
+    index[A_csc->col_id[i]] = i;
+    #if DEBUG
+    std::cout << A_csc->col_id[i] << ": " << i << std::endl;
+    #endif
+  }
+
+  std::vector<Inters_Bicl>* inters = new std::vector<Inters_Bicl>();
+
+  for (size_t i = 0; i < b_csr->size(); ++i) {
+    Inters_Bicl p;
+    p.C.assign(b_csr->at(i)->col_ind->begin(), b_csr->at(i)->col_ind->end());
+    auto* csr = b_csr->at(i);
+
+    #if DEBUG
+    std::cout << "Intersecting biclique num: " << i << std::endl;  
+    #endif
+
+    for (size_t j = 0; j < csr->row_id->size(); ++j) {
+      uint32_t row = (*csr->row_id)[j];
+
+      if (row < index.size() and index[row] != UINT32_MAX) { // exists in A_csc_col_id
+        size_t start_col = A_csc->col_ptr[index[row]];
+        size_t end_col = A_csc->col_ptr[index[row] + 1];
+
+        for (size_t k = start_col; k < end_col; ++k) {
+          uint32_t inter = A_csc->row_ind[k];
+          p.S.push_back(inter);
+        }
+      }
+    }
+    #if DEBUG
+    std::cout << "Pushing inters bicl: " << p << std::endl;
+    #endif
+    if (p.S.empty() or p.C.empty()) {
+      continue;
+    }
+    std::sort(p.S.begin(), p.S.end()); // TODO: verify if is needed
+    p.S.erase(std::unique(p.S.begin(), p.S.end()), p.S.end()); // TODO: verify if is needed
+    inters->push_back(p);
+  }
+  return inters;
+}
+
 
 csr_matrix* mult(Biclique* b, csr_matrix* A_csr)
 {
   auto *inters = compute_intersections(b, A_csr);
-  auto *res = csrFromIntersBicl(b, inters);
-  std::vector<Inters_Bicl>().swap(*inters);
-  return res;
-}
-
-csr_matrix* mult(Biclique* a, Biclique* b)
-{
-  auto *inters = compute_intersections(a, b);
-  auto *res = csrFromIntersBicl(a, inters);
-  std::vector<Inters_Bicl>().swap(*inters);
+  auto bicliqueTemp = new Biclique(inters);
+  auto *res = bicliqueTemp->toMatrix();
+  delete bicliqueTemp;
   return res;
 }
 
@@ -592,7 +717,7 @@ std::vector<Inters_Bicl>* compute_intersections(Biclique* b, csr_matrix* A_csr)
   auto* b_csc = b->get_csc();
   auto* b_marks = b->get_marks();
 
-  #if DEBUG
+  #if 0
   b->printMarks();
   #endif
 
@@ -605,8 +730,8 @@ std::vector<Inters_Bicl>* compute_intersections(Biclique* b, csr_matrix* A_csr)
   auto *intersections = new std::vector<Inters_Bicl>();
 
   for (size_t i = 0; i < b_csc->size(); i++) { 
-    auto S_i = &(b_csc->at(i)->col_id);
-    auto C_i = &(b_csc->at(i)->row_ind);
+    auto S_i = b_csc->at(i)->col_id;
+    auto C_i = b_csc->at(i)->row_ind;
 
     Inters_Bicl p;
     p.S.assign(C_i->begin(), C_i->end());
@@ -644,6 +769,15 @@ std::vector<Inters_Bicl>* compute_intersections(Biclique* b, csr_matrix* A_csr)
   return intersections;
 }
 
+csr_matrix* mult(Biclique* a, Biclique* b)
+{
+  auto *inters = compute_intersections(a, b);
+  auto bicliqueTemp = new Biclique(inters);
+  auto *res = bicliqueTemp->toMatrix();
+  delete bicliqueTemp;
+  return res;
+  //return Biclique::csrFromInters(inters);
+}
 
 std::vector<Inters_Bicl>* compute_intersections(Biclique* a, Biclique* b)
 {
@@ -653,24 +787,32 @@ std::vector<Inters_Bicl>* compute_intersections(Biclique* a, Biclique* b)
 
   auto* a_csc = a->get_csc();
   auto* b_csr = b->get_csr();
-  auto* a_marks = a->get_marks();
+  //auto* a_marks = a->get_marks();
 
   auto *intersections = new std::vector<Inters_Bicl>(); 
 
   for (size_t i = 0; i < a_csc->size(); ++i) {
     Inters_Bicl p;
     std::vector<uint32_t> C_temp;
-    p.S = (a_csc->at(i)->col_id);
+    //p.S.assign(a_csc->at(i)->col_id->begin(), a_csc->at(i)->col_id->end());
+    p.S.assign(a_csc->at(i)->row_ind->begin(), a_csc->at(i)->row_ind->end());
     size_t count = 0;
 
-    for (size_t j = 0; j < a_csc->at(i)->col_id.size(); ++j) {
-      auto* index_to_inter = b->get_indexes(a_csc->at(i)->col_id.at(j));
-      if (index_to_inter == nullptr)  continue;
+    for (size_t j = 0; j < a_csc->at(i)->col_id->size(); ++j) {
+      auto* index_to_inter = b->get_indexes(a_csc->at(i)->col_id->at(j));
+      if (index_to_inter == nullptr){
+        continue;
+      }
       
       for (auto& index_b : (*index_to_inter)) {
-        
-        for (size_t k = 0; k < b_csr->at(index_b)->col_ind.size(); ++k) {
-          C_temp.push_back(b_csr->at(index_b)->col_ind.at(k));
+        // if (index_b == i) { // skip self operation
+        //   continue;
+        // }
+        //C_temp.insert(C_temp.end(),
+        //                  b_csr->at(index_b)->col_ind->begin(),
+        //                  b_csr->at(index_b)->col_ind->end());
+        for (size_t k = 0; k < b_csr->at(index_b)->col_ind->size(); ++k) {
+          C_temp.push_back(b_csr->at(index_b)->col_ind->at(k));
         }
       }
       ++count;
@@ -695,6 +837,7 @@ std::vector<Inters_Bicl>* compute_intersections(Biclique* a, Biclique* b)
   return intersections;
 }
 
+#if 0
 csr_matrix* csrFromIntersBicl(Biclique* b, std::vector<Inters_Bicl>* intersections)
 {
   auto* res = new csr_matrix();
@@ -728,7 +871,7 @@ csr_matrix* csrFromIntersBicl(Biclique* b, std::vector<Inters_Bicl>* intersectio
   res->row_ptr.push_back(res->col_ind.size()); 
   return res;
 }
-
+#endif
 
 csr_matrix* csr_add(csr_matrix* A, csr_matrix* B)
 {
@@ -832,6 +975,7 @@ csr_matrix* csr_add(csr_matrix* A, csr_matrix* B)
   return res;
 }
 
+#if 0
 Biclique* bicliqueFromIntersBicl(Biclique* b, std::vector<Inters_Bicl>* intersections)
 {
   auto* newBicl = new Biclique();
@@ -853,10 +997,10 @@ Biclique* bicliqueFromIntersBicl(Biclique* b, std::vector<Inters_Bicl>* intersec
   for (size_t i = 0; i < intersections->size(); i++) {
     if (not visited[i].empty()) {
       auto newCsr = new csr_biclique();
-      newCsr->col_ind.assign(intersections->at(i).C.begin(), intersections->at(i).C.end());
-      newCsr->row_id.assign(visited[i].begin(), visited[i].end());
+      newCsr->col_ind->assign(intersections->at(i).C.begin(), intersections->at(i).C.end());
+      newCsr->row_id->assign(visited[i].begin(), visited[i].end());
       newBicl->add_csr(newCsr);
-       for (auto& s : newCsr->row_id) {
+       for (auto& s : *(newCsr->row_id)) {
         tempMark[s].push_back(newBicl->countBicliques()-1);
       }
     }
@@ -864,10 +1008,11 @@ Biclique* bicliqueFromIntersBicl(Biclique* b, std::vector<Inters_Bicl>* intersec
 
   newBicl->update_marks(tempMark);
 
-  return newBicl;
-  
+  return newBicl; 
 }
+#endif
 
+#if 0
 struct PairHash
 {
   template <class T1, class T2>
@@ -886,8 +1031,9 @@ struct PairEq
     return a.first == b.first && a.second == b.second;
   }
 };
+#endif
 
-
+#if 0
 Inters_Bicl removeSFromInter(Inters_Bicl& original, uint32_t index)
 {
   Inters_Bicl generated;
@@ -899,7 +1045,9 @@ Inters_Bicl removeSFromInter(Inters_Bicl& original, uint32_t index)
   generated.C.insert(generated.C.end(), original.C.begin(), original.C.end());
   return generated;
 }
+#endif
 
+#if 0
 void removeCFromInter(Inters_Bicl*& original, uint32_t index)
 {
   std::vector<uint32_t> filteredC;
@@ -910,7 +1058,9 @@ void removeCFromInter(Inters_Bicl*& original, uint32_t index)
   }
   original->C.swap(filteredC);
 }
+#endif
 
+#if 0
 Biclique* biclique_add(Biclique* a, Biclique* b, std::vector<Inters_Bicl>* interA, std::vector<Inters_Bicl>* interB)
 {
   auto *merge = new Biclique();
@@ -928,7 +1078,7 @@ Biclique* biclique_add(Biclique* a, Biclique* b, std::vector<Inters_Bicl>* inter
   for(auto i : *merged) {
     std::cout << "Inter: " << count++ << std::endl;
     std::cout << "S:";
-    for (auto &j : *(i.S)) {
+    for (auto &j : i.S) {
       std::cout << " " << j;
     }
     std::cout << std::endl << "C:";
@@ -1088,10 +1238,10 @@ Biclique* biclique_add(Biclique* a, Biclique* b, std::vector<Inters_Bicl>* inter
     }
 
     auto csr = new csr_biclique();
-    csr->col_ind.insert(csr->col_ind.end(), bicA.C.begin(), bicA.C.end());
+    csr->col_ind->insert(csr->col_ind->end(), bicA.C.begin(), bicA.C.end());
 
     for (auto& s : bicA.S) {
-      csr->row_id.push_back(s);
+      csr->row_id->push_back(s);
       tempMarks[s].push_back(merge->countBicliques());
     }
     merge->add_csr(csr);
@@ -1103,10 +1253,10 @@ Biclique* biclique_add(Biclique* a, Biclique* b, std::vector<Inters_Bicl>* inter
     }
 
     auto csr = new csr_biclique();
-    csr->col_ind.insert(csr->col_ind.end(), bicB.C.begin(), bicB.C.end());
+    csr->col_ind->insert(csr->col_ind->end(), bicB.C.begin(), bicB.C.end());
 
     for (auto& s : bicB.S) {
-      csr->row_id.push_back(s);
+      csr->row_id->push_back(s);
       tempMarks[s].push_back(merge->countBicliques());
     }
     merge->add_csr(csr);
@@ -1114,5 +1264,7 @@ Biclique* biclique_add(Biclique* a, Biclique* b, std::vector<Inters_Bicl>* inter
   merge->update_marks(tempMarks); 
   return merge;
 }
+
+#endif
 
 

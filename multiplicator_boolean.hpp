@@ -13,13 +13,13 @@
 
 struct Intersection
 {
-  size_t start_col;
-  size_t end_col;
-  size_t start_row;
-  size_t end_row;
-  uint32_t value_col;
-  uint32_t value_row;
-  uint32_t index_bicl;
+  size_t start_col = 0;
+  size_t end_col = 0;
+  size_t start_row = 0;
+  size_t end_row = 0;
+  uint32_t value_col = 0;
+  uint32_t value_row = 0;
+  uint32_t index_bicl = 0;
 
   Intersection() = default;
   Intersection(const Intersection& copy) { std::memcpy(this, &copy, sizeof(Intersection)); }
@@ -69,33 +69,37 @@ struct Intersection
   };
 };
 
-struct Inters_Bicl
-{
-  std::vector<uint32_t> S; 
-  std::vector<uint32_t> C;
-};
-
 typedef std::priority_queue<Intersection*, std::vector<Intersection*>, Intersection::Col_Comp> PQ_Col;
 typedef std::priority_queue<Intersection*, std::vector<Intersection*>, Intersection::Row_Comp> PQ_Row;
 
 void powBicl(Matrix* matrix, Biclique* biclique);
 void powBicl(Matrix* matrix, Biclique* biclique, Matrix*& outMatrix, Biclique*& outBiclique);
 void pow(Matrix* matrix);
+
+#if 0
 void multiply(Matrix* A, Matrix* B);
 void multiply(Matrix* A, Biclique* aB, Matrix* B, Biclique* bB);
 void multiply(Matrix* A, Biclique* aB, Matrix* B, Biclique* bB, Matrix*& outMatrix, Biclique*& outBiclique);
+#endif
 
 csr_matrix* mult(csc_matrix* A_csc, csr_matrix* B_csr);     //AxA
 csr_matrix* mult(csc_matrix* A_csc, Biclique* b); //Axb
 csr_matrix* mult(Biclique* b, csr_matrix* A_csr); //bxA
 csr_matrix* mult(Biclique* a, Biclique* b); //bxb
 
+std::vector<Inters_Bicl>* compute_intersections(csc_matrix* A_csc, Biclique* b); //Axb
 std::vector<Inters_Bicl>* compute_intersections(Biclique* b, csr_matrix* A_csr); //AxA
 std::vector<Inters_Bicl>* compute_intersections(Biclique* a, Biclique* b);
 
+#if 0
 csr_matrix* csrFromIntersBicl(Biclique* b, std::vector<Inters_Bicl>* intersections);
+#endif
+#if 0
 Biclique* bicliqueFromIntersBicl(Biclique* b, std::vector<Inters_Bicl>* intersections);
+#endif
 csr_matrix* csr_add(csr_matrix* A, csr_matrix* B);
+#if 0
 Biclique* biclique_add(Biclique* a, Biclique* b, std::vector<Inters_Bicl>* interA, std::vector<Inters_Bicl>* interB);
+#endif
 
 #endif

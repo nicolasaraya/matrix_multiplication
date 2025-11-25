@@ -3,16 +3,12 @@
 Matrix::Matrix(std::string path) 
 {
   setFile(path);
+
   if (utils::validateExtension(path, "txt")) {
-    make_csr();
+    binaryFormat = false;
   } else if (utils::validateExtension(path, "bin")) {
-    if (useDelta16) {
-      make_csr_bin16();
-    } else {
-      make_csr_bin();
-    }
+    binaryFormat = true;
   }
-  make_csc();
 }
 
 Matrix::~Matrix() 
@@ -31,6 +27,14 @@ void Matrix::setFile(std::string path)
 
 csr_matrix* Matrix::make_csr() 
 {
+  if (binaryFormat) {
+    return make_csr_bin();
+  }
+
+  if (csr) {
+    return csr;
+  }
+
   TIMERSTART(BUILD_CSR_MATRIX);
   std::ifstream file;
   file.open(path);
@@ -68,12 +72,24 @@ csr_matrix* Matrix::make_csr()
 
   file.close();
   TIMERSTOP(BUILD_CSR_MATRIX);
-
+  std::cout << "Nodes: " << csr->nRows() << ", Edges: " << csr->nEdges() << std::endl;
   return csr;
 }
 
 csr_matrix* Matrix::make_csr_bin()
 {
+  if (not binaryFormat) {
+    return make_csr();
+  }
+
+  if (binaryFormat and useDelta16) {
+    return make_csr_bin16();
+  }
+  
+  if (csr) {
+    return csr;
+  }
+
   TIMERSTART(BUILD_CSR_MATRIX_BIN);
   std::ifstream file;
   file.open(path, std::ios::in | std::ios::binary);
@@ -119,18 +135,29 @@ csr_matrix* Matrix::make_csr_bin()
     // }
 
     csr->col_ind.insert(csr->col_ind.end(), adjacents.begin(), adjacents.end());
-
     csr->row_id.push_back(id);
     csr->row_ptr.push_back(csr->col_ind.size());
   }
   csr->max_row = csr->row_id.back();
   TIMERSTOP(BUILD_CSR_MATRIX_BIN);
-
+  std::cout << "Nodes: " << csr->nRows() << ", Edges: " << csr->nEdges() << std::endl;
   return csr;
 }
 
 csr_matrix* Matrix::make_csr_bin16()
 {
+  if (binaryFormat and not useDelta16) {
+    return make_csr_bin();
+  }
+
+  if (not binaryFormat) {
+    return make_csr();
+  }
+
+  if (csr) {
+    return csr;
+  }
+
   std::cout << "Reading delta16 encoded binary file." << std::endl;
   TIMERSTART(BUILD_CSR_MATRIX_BIN16);
   std::ifstream file;
@@ -201,6 +228,12 @@ csr_matrix* Matrix::make_csr_bin16()
 
 csc_matrix* Matrix::make_csc() 
 {
+  // TODO: this depend from csr being created first. we need to fix this.
+
+  if (csc) {
+    return csc;
+  }
+
   TIMERSTART(BUILD_CSC_MATRIX);
   csc = new csc_matrix();
   csc->col_ptr.push_back(0);
@@ -279,19 +312,17 @@ void Matrix::delete_csc()
   }
 }
 
-void Matrix::saveTxt()
+void Matrix::saveTxt() const
 {
   saveTxt(path);
 }
 
-void Matrix::saveTxt(std::string pathFile)
+void Matrix::saveTxt(std::string pathFile) const
 {
   std::cout << "Saving: " << pathFile << std::endl;
   std::cout << "Edges: " << csr->nEdges() << std::endl;
   std::cout << "Nodes: " << csr->nRows() << std::endl;
-
-  path = pathFile;
-
+  
   std::ofstream file;
   file.open(pathFile, std::ofstream::out | std::ofstream::trunc); // limpia el contenido del fichero
   file << csr->col_ind.size() << std::endl;
@@ -313,12 +344,12 @@ void Matrix::saveTxt(std::string pathFile)
   file.close();
 }
 
-void Matrix::saveBin()
+void Matrix::saveBin() const
 {
   saveBin(path);
 }
 
-void Matrix::saveBin(std::string pathFile)
+void Matrix::saveBin(std::string pathFile) const
 {
   if (useDelta16) {
     saveBin16(pathFile);
@@ -328,7 +359,6 @@ void Matrix::saveBin(std::string pathFile)
   std::cout << "Saving: " << pathFile << std::endl;
   std::cout << "Edges: " << csr->nEdges() << std::endl;
   std::cout << "Nodes: " << csr->nRows() << std::endl;
-  path = pathFile;
   std::ofstream file(pathFile, std::ios::out | std::ios::binary | std::ofstream::trunc); 
   assert(file.is_open());
 
@@ -349,17 +379,16 @@ void Matrix::saveBin(std::string pathFile)
   file.close();
 }
 
-void Matrix::saveBin16()
+void Matrix::saveBin16() const
 {
   saveBin16(path);
 }
 
-void Matrix::saveBin16(std::string pathFile)
+void Matrix::saveBin16(std::string pathFile) const
 {
   std::cout << "Saving (delta16): " << pathFile << std::endl;
   std::cout << "Edges: " << csr->nEdges() << std::endl;
   std::cout << "Nodes: " << csr->nRows() << std::endl;
-  path = pathFile;
   std::ofstream file(pathFile, std::ios::out | std::ios::binary | std::ofstream::trunc); 
   assert(file.is_open());
 
