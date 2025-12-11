@@ -57,6 +57,7 @@ void powBicl(Matrix* matrix, Biclique* biclique)
 {
   matrix->make_csr();
   matrix->make_csc();
+
   biclique->make_csr();
   biclique->make_csc();
 
@@ -85,7 +86,7 @@ void powBicl(Matrix* matrix, Biclique* biclique)
   #endif
 
   TIMERSTART(Axb);
-  auto* Axb = mult(matrix->get_csc(), biclique);
+  auto* Axb = compute_intersections(matrix->get_csc(), biclique);
   TIMERSTOP(Axb);
   matrix->delete_csc();
 
@@ -95,7 +96,7 @@ void powBicl(Matrix* matrix, Biclique* biclique)
   #endif
 
   TIMERSTART(bxA);
-  auto* bxA = mult(biclique, matrix->get_csr());
+  auto* bxA = compute_intersections(biclique, matrix->get_csr());
   TIMERSTOP(bxA);
   matrix->delete_csr();
   delete matrix;
@@ -106,7 +107,7 @@ void powBicl(Matrix* matrix, Biclique* biclique)
   #endif
 
   TIMERSTART(bxb);
-  auto* bxb = mult(biclique, biclique);
+  auto* bxb = compute_intersections(biclique, biclique);
   TIMERSTOP(bxb);
   TIMERSTOP(total_operations);
   delete biclique;
@@ -116,16 +117,19 @@ void powBicl(Matrix* matrix, Biclique* biclique)
   bxb->printAsList();
   #endif
   
-
   TIMERSTART(join);
-  auto* join = csr_add(AxA, Axb);
+  auto* tempAxb = new Biclique(Axb);
+  auto* join = csr_add(AxA, tempAxb->toMatrix());
   std::cout << "edges AxA + Axb: " << join->nEdges() << std::endl;
   delete AxA;
-  delete Axb;
-  auto* join2 = csr_add(bxA, bxb);
+  delete tempAxb;
+
+  auto* tempBxA = new Biclique(bxA);
+  auto* tempBxB = new Biclique(bxb);
+  auto* join2 = csr_add(tempBxA->toMatrix(), tempBxB->toMatrix());
   std::cout << "edges bxA + bxb: " << join2->nEdges() << std::endl;
-  delete bxA;
-  delete bxb;
+  delete tempBxB;
+  delete tempBxA;
   auto* join3 = csr_add(join, join2);
   delete join;
   delete join2;
@@ -715,7 +719,7 @@ std::vector<Inters_Bicl>* compute_intersections(Biclique* b, csr_matrix* A_csr)
   #endif
 
   auto* b_csc = b->get_csc();
-  auto* b_marks = b->get_marks();
+  //auto* b_marks = b->get_marks();
 
   #if 0
   b->printMarks();
@@ -805,9 +809,6 @@ std::vector<Inters_Bicl>* compute_intersections(Biclique* a, Biclique* b)
       }
       
       for (auto& index_b : (*index_to_inter)) {
-        // if (index_b == i) { // skip self operation
-        //   continue;
-        // }
         //C_temp.insert(C_temp.end(),
         //                  b_csr->at(index_b)->col_ind->begin(),
         //                  b_csr->at(index_b)->col_ind->end());
